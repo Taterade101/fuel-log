@@ -286,6 +286,10 @@
 <header>
   <h1>FUEL LOG</h1>
   <div class="subtitle" id="headerSubtitle">Loading...</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;margin-bottom:0">
+    <div class="subtitle" id="headerSubtitle2" style="display:none"></div>
+    <button onclick="location.reload(true)" style="background:none;border:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:0.6rem;cursor:pointer;padding:2px 0;letter-spacing:1px;text-transform:uppercase;margin-left:auto" title="Get latest version">&#8635; Update</button>
+  </div>
   <div class="tabs">
     <button class="tab active" onclick="switchTab('today')">Today</button>
     <button class="tab" onclick="switchTab('week')">Week</button>
