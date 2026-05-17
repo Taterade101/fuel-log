@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fuel Log</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&display=swap');
+
+  :root {
+    --bg: #0e0e0e;
+    --surface: #161616;
+    --border: #2a2a2a;
+    --accent: #c8f060;
+    --accent2: #60c8f0;
+    --accent3: #f0a060;
+    --text: #e8e8e0;
+    --muted: #555;
+    --danger: #f06060;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    padding: 0 0 80px;
+  }
+
+  header {
+    padding: 20px 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--accent);
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+
+  .subtitle {
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .tabs {
+    display: flex;
+    margin-top: 16px;
+  }
+
+  .tab {
+    flex: 1;
+    background: none;
+    border: none;
+    border-bottom: 2px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 10px 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+
+  .goals {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .goal-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .goal-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
+  .goal-numbers { font-size: 1rem; font-weight: 500; margin-bottom: 8px; }
+  .goal-numbers .current { color: var(--accent); }
+  .goal-numbers .slash { color: var(--muted); font-size: 0.75rem; }
+  .goal-numbers .target { color: var(--text); font-size: 0.75rem; }
+
+  .progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+  .cal-fill { background: var(--accent); }
+  .pro-fill { background: var(--accent2); }
+  .over { background: var(--danger) !important; }
+  .remaining { font-size: 0.6rem; color: var(--muted); margin-top: 5px; }
+
+  .section-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+
+  .preview-wrap { position: relative; margin-bottom: 8px; display: none; }
+  .preview-wrap img { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid var(--accent); display: block; }
+  .preview-clear {
+    position: absolute; top: 6px; right: 6px;
+    background: rgba(0,0,0,0.75); border: none; color: var(--text);
+    border-radius: 50%; width: 24px; height: 24px; cursor: pointer;
+    font-size: 0.9rem; display: flex; align-items: center; justify-content: center;
+  }
+
+  .photo-hint { font-size: 0.58rem; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; display: none; }
+
+  .input-row { display: flex; gap: 8px; margin-bottom: 16px; align-items: stretch; }
+
+  textarea {
+    flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.78rem;
+    padding: 10px; resize: none; height: 72px; outline: none; transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+
+  .btn-col { display: flex; flex-direction: column; gap: 6px; }
+
+  .photo-btn {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 1.1rem; width: 44px; height: 32px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: border-color 0.2s;
+  }
+  .photo-btn:hover, .photo-btn.has-photo { border-color: var(--accent); }
+
+  button.log-btn {
+    background: var(--accent); color: #0e0e0e; border: none; border-radius: 8px;
+    font-family: 'DM Mono', monospace; font-size: 0.65rem; font-weight: 500;
+    padding: 0 12px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+    transition: opacity 0.2s; flex: 1;
+  }
+  button.log-btn:hover { opacity: 0.85; }
+  button.log-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  #photoInput { display: none; }
+
+  .log-entry {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; display: flex; justify-content: space-between;
+    align-items: flex-start; gap: 10px; margin-bottom: 7px; animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .entry-name { font-size: 0.75rem; color: var(--text); flex: 1; line-height: 1.4; }
+  .entry-note { font-size: 0.6rem; color: var(--muted); margin-top: 2px; }
+  .entry-macros { text-align: right; white-space: nowrap; }
+  .entry-cal { font-size: 0.8rem; color: var(--accent); font-weight: 500; }
+  .entry-pro { font-size: 0.6rem; color: var(--accent2); margin-top: 1px; }
+
+  .delete-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; padding: 0 0 0 4px; transition: color 0.2s; }
+  .delete-btn:hover { color: var(--danger); }
+
+  .empty-state { font-size: 0.7rem; color: var(--muted); text-align: center; padding: 18px; border: 1px dashed var(--border); border-radius: 8px; margin-bottom: 16px; }
+
+  .ai-bubble {
+    background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    border-radius: 8px; padding: 10px 12px; font-size: 0.72rem; line-height: 1.6;
+    color: var(--text); margin-bottom: 16px; animation: fadeIn 0.3s ease;
+  }
+  .ai-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); margin-bottom: 5px; }
+
+  .loading { color: var(--muted); font-size: 0.72rem; padding: 10px; text-align: center; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+  .reset-btn {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    font-family: 'DM Mono', monospace; font-size: 0.6rem; padding: 6px 12px;
+    border-radius: 6px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+    transition: all 0.2s; width: 100%; margin-top: 6px;
+  }
+  .reset-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+  .date-label { font-size: 0.6rem; color: var(--muted); text-align: right; margin-bottom: 14px; letter-spacing: 1px; }
+
+  /* WEEK */
+  .week-summary { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 16px; }
+  .week-stat-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .week-stat-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
+  .week-stat-val { font-size: 1rem; font-weight: 500; }
+  .deficit-positive { color: var(--accent); }
+  .deficit-negative { color: var(--danger); }
+
+  .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 16px; }
+  .week-day { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 4px; text-align: center; }
+  .week-day.today { border-color: var(--accent); }
+  .week-day-name { font-size: 0.52rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .week-day-cal { font-size: 0.65rem; font-weight: 500; color: var(--text); }
+  .week-day-cal.empty { color: var(--border); }
+  .week-day-cal.over { color: var(--danger); }
+  .week-day-cal.good { color: var(--accent); }
+  .week-day-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 4px; overflow: hidden; }
+  .week-day-fill { height: 100%; background: var(--accent); border-radius: 2px; }
+  .week-day-fill.over { background: var(--danger); }
+
+  /* WEIGHT */
+  .weight-input-row { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
+  .weight-input-row input[type="number"] {
+    flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-family: 'DM Mono', monospace; font-size: 1rem;
+    padding: 10px 12px; outline: none; transition: border-color 0.2s; -moz-appearance: textfield;
+  }
+  .weight-input-row input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .weight-input-row input[type="number"]:focus { border-color: var(--accent); }
+  .weight-log-btn {
+    background: var(--accent); color: #0e0e0e; border: none; border-radius: 8px;
+    font-family: 'DM Mono', monospace; font-size: 0.65rem; font-weight: 500;
+    padding: 10px 16px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap;
+  }
+  .weight-log-btn:hover { opacity: 0.85; }
+
+  .chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px; overflow: hidden; }
+  .chart-wrap svg { width: 100%; display: block; }
+
+  .weight-entry {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px; animation: fadeIn 0.3s ease;
+  }
+  .weight-entry-date { font-size: 0.65rem; color: var(--muted); }
+  .weight-entry-val { font-size: 1rem; font-weight: 500; color: var(--accent3); }
+  .weight-entry-delta { font-size: 0.65rem; }
+  .weight-entry-delta.down { color: var(--accent); }
+  .weight-entry-delta.up { color: var(--danger); }
+  .weight-del-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; padding: 0 0 0 8px; transition: color 0.2s; }
+  .weight-del-btn:hover { color: var(--danger); }
+
+  .goal-progress-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px; margin-bottom: 12px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px;
+  }
+  .gp-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+  .gp-val { font-size: 1.3rem; font-weight: 500; }
+  .gp-sub { font-size: 0.6rem; color: var(--muted); margin-top: 2px; }
+  .gp-divider { width: 1px; background: var(--border); align-self: stretch; }
+
+  /* SETTINGS */
+  .settings-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .settings-card h3 { font-size: 0.65rem; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
+  .field input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.85rem;
+    padding: 9px 10px; outline: none; transition: border-color 0.2s; -moz-appearance: textfield;
+  }
+  .field input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .field input:focus { border-color: var(--accent); }
+
+  .save-btn {
+    background: var(--accent); color: #0e0e0e; border: none; border-radius: 8px;
+    font-family: 'DM Mono', monospace; font-size: 0.7rem; font-weight: 500;
+    padding: 10px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+    width: 100%; transition: opacity 0.2s; margin-top: 4px;
+  }
+  .save-btn:hover { opacity: 0.85; }
+
+  .save-confirm { font-size: 0.65rem; color: var(--accent); text-align: center; margin-top: 8px; display: none; }
+
+  .info-box {
+    background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent2);
+    border-radius: 8px; padding: 10px 12px; font-size: 0.7rem; line-height: 1.6; color: var(--muted); margin-bottom: 16px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>FUEL LOG</h1>
+  <div class="subtitle" id="headerSubtitle">Loading...</div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('today')">Today</button>
+    <button class="tab" onclick="switchTab('week')">Week</button>
+    <button class="tab" onclick="switchTab('weight')">Weight</button>
+    <button class="tab" onclick="switchTab('settings')">Settings</button>
+  </div>
+</header>
+
+<!-- TODAY -->
+<div class="page active" id="page-today">
+  <div class="date-label" id="dateLabel"></div>
+  <div class="goals">
+    <div class="goal-card">
+      <div class="goal-label">Calories</div>
+      <div class="goal-numbers">
+        <span class="current" id="calCurrent">0</span>
+        <span class="slash"> / </span>
+        <span class="target" id="calTarget">2,000</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill cal-fill" id="calBar" style="width:0%"></div></div>
+      <div class="remaining" id="calRemaining">...</div>
+    </div>
+    <div class="goal-card">
+      <div class="goal-label">Protein</div>
+      <div class="goal-numbers">
+        <span class="current" id="proCurrent" style="color:var(--accent2)">0g</span>
+        <span class="slash"> / </span>
+        <span class="target" id="proTarget">160g</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill pro-fill" id="proBar" style="width:0%"></div></div>
+      <div class="remaining" id="proRemaining">...</div>
+    </div>
+  </div>
+
+  <div class="section-label">Log food</div>
+  <div class="photo-hint" id="photoHint">&#128247; Photo ready &mdash; add a note or just hit Log</div>
+  <div class="preview-wrap" id="previewWrap">
+    <img id="previewImg" src="" alt="Food photo" />
+    <button class="preview-clear" onclick="clearPhoto()">&#215;</button>
+  </div>
+  <div class="input-row">
+    <textarea id="foodInput" placeholder="Describe what you ate, or snap/upload a photo..."></textarea>
+    <div class="btn-col">
+      <button class="photo-btn" id="photoBtn" onclick="document.getElementById('photoInput').click()" title="Camera or photo library">&#128247;</button>
+      <button class="log-btn" id="logBtn" onclick="logFood()">Log</button>
+    </div>
+  </div>
+  <input type="file" id="photoInput" accept="image/*" onchange="handlePhoto(event)" />
+
+  <div id="aiResponse"></div>
+  <div class="section-label">Today's log</div>
+  <div id="logList"></div>
+  <button class="reset-btn" onclick="resetDay()">&#8634; Reset today's log</button>
+</div>
+
+<!-- WEEK -->
+<div class="page" id="page-week">
+  <div class="section-label" style="margin-top:4px">This week</div>
+  <div class="week-summary" id="weekSummary"></div>
+  <div class="section-label">Daily breakdown</div>
+  <div class="week-grid" id="weekGrid"></div>
+  <div class="section-label">Deficit explained</div>
+  <div class="ai-bubble" style="border-left-color:var(--accent2)">
+    <div class="ai-label" style="color:var(--accent2)">How it works</div>
+    Your maintenance is ~2,500 cal/day. Eating at your calorie goal creates a daily deficit. Over 7 days, 3,500 cal deficit = ~1 lb of fat. The weekly total below shows your actual progress based on what you've logged.
+  </div>
+</div>
+
+<!-- WEIGHT -->
+<div class="page" id="page-weight">
+  <div class="section-label" style="margin-top:4px">Log today's weight</div>
+  <div class="weight-input-row">
+    <input type="number" id="weightInput" placeholder="e.g. 184.5" step="0.1" min="100" max="400" />
+    <button class="weight-log-btn" onclick="logWeight()">Log lbs</button>
+  </div>
+  <div id="goalProgressCard"></div>
+  <div class="section-label">Trend</div>
+  <div class="chart-wrap"><svg id="weightChart" viewBox="0 0 300 120"></svg></div>
+  <div class="section-label">History</div>
+  <div id="weightList"></div>
+</div>
+
+<!-- SETTINGS -->
+<div class="page" id="page-settings">
+  <div class="section-label" style="margin-top:4px">Your profile</div>
+
+  <div class="info-box">
+    Each person opens this on their own browser &mdash; your settings and logs are stored separately on your device and never shared.
+  </div>
+
+  <div class="settings-card">
+    <h3>Identity</h3>
+    <div class="field">
+      <label>Your name (shown in header)</label>
+      <input type="text" id="s-name" placeholder="e.g. Tate" maxlength="20" />
+    </div>
+  </div>
+
+  <div class="settings-card">
+    <h3>Daily goals</h3>
+    <div class="field">
+      <label>Calorie goal (cal/day)</label>
+      <input type="number" id="s-cal" placeholder="2000" min="500" max="5000" />
+    </div>
+    <div class="field">
+      <label>Protein goal (g/day)</label>
+      <input type="number" id="s-pro" placeholder="160" min="20" max="400" />
+    </div>
+    <div class="field">
+      <label>Maintenance calories (for deficit calc)</label>
+      <input type="number" id="s-maint" placeholder="2500" min="1000" max="6000" />
+    </div>
+  </div>
+
+  <div class="settings-card">
+    <h3>Weight goal</h3>
+    <div class="field">
+      <label>Starting weight (lbs)</label>
+      <input type="number" id="s-start" placeholder="186" step="0.1" min="50" max="600" />
+    </div>
+    <div class="field">
+      <label>Goal weight (lbs)</label>
+      <input type="number" id="s-goal" placeholder="175" step="0.1" min="50" max="600" />
+    </div>
+  </div>
+
+  <button class="save-btn" onclick="saveSettings()">Save settings</button>
+  <div class="save-confirm" id="saveConfirm">&#10003; Saved!</div>
+</div>
+
+<script>
+  // ---- SETTINGS ----
+  function defaultSettings() {
+    return { name: '', calGoal: 2000, proGoal: 160, maintenance: 2500, startWeight: 186, goalWeight: 175 };
+  }
+
+  function loadSettings() {
+    try { return Object.assign(defaultSettings(), JSON.parse(localStorage.getItem('fuelSettings') || '{}')); }
+    catch { return defaultSettings(); }
+  }
+
+  function saveSettings() {
+    const s = {
+      name: document.getElementById('s-name').value.trim(),
+      calGoal: parseInt(document.getElementById('s-cal').value) || 2000,
+      proGoal: parseInt(document.getElementById('s-pro').value) || 160,
+      maintenance: parseInt(document.getElementById('s-maint').value) || 2500,
+      startWeight: parseFloat(document.getElementById('s-start').value) || 186,
+      goalWeight: parseFloat(document.getElementById('s-goal').value) || 175,
+    };
+    localStorage.setItem('fuelSettings', JSON.stringify(s));
+    applySettings(s);
+    const confirm = document.getElementById('saveConfirm');
+    confirm.style.display = 'block';
+    setTimeout(() => confirm.style.display = 'none', 2000);
+  }
+
+  function applySettings(s) {
+    // Header
+    const name = s.name ? s.name + "'s " : '';
+    document.getElementById('headerSubtitle').textContent =
+      (s.startWeight + ' \u2192 ' + s.goalWeight + ' lbs \u2022 ' + s.calGoal.toLocaleString() + ' cal \u2022 ' + s.proGoal + 'g protein').toUpperCase();
+    document.title = name ? name + 'Fuel Log' : 'Fuel Log';
+
+    // Today targets
+    document.getElementById('calTarget').textContent = s.calGoal.toLocaleString();
+    document.getElementById('proTarget').textContent = s.proGoal + 'g';
+
+    updateTodayUI();
+  }
+
+  function populateSettingsForm(s) {
+    document.getElementById('s-name').value = s.name || '';
+    document.getElementById('s-cal').value = s.calGoal;
+    document.getElementById('s-pro').value = s.proGoal;
+    document.getElementById('s-maint').value = s.maintenance;
+    document.getElementById('s-start').value = s.startWeight;
+    document.getElementById('s-goal').value = s.goalWeight;
+  }
+
+  // ---- CORE ----
+  function today() { return new Date().toISOString().split('T')[0]; }
+
+  function getWeekDates() {
+    const dates = [], now = new Date();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      dates.push(d.toISOString().split('T')[0]);
+    }
+    return dates;
+  }
+
+  function loadLog(date) { return JSON.parse(localStorage.getItem('fuelLog_' + date) || '[]'); }
+  function saveLog(date, log) { localStorage.setItem('fuelLog_' + date, JSON.stringify(log)); }
+  function loadWeights() { return JSON.parse(localStorage.getItem('weightLog') || '[]'); }
+  function saveWeights(w) { localStorage.setItem('weightLog', JSON.stringify(w)); }
+
+  let todayLog = loadLog(today());
+  let pendingImageData = null, pendingMediaType = null;
+
+  // ---- TABS ----
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      t.classList.toggle('active', ['today','week','weight','settings'][i] === tab);
+    });
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + tab).classList.add('active');
+    if (tab === 'week') renderWeek();
+    if (tab === 'weight') renderWeight();
+    if (tab === 'settings') populateSettingsForm(loadSettings());
+  }
+
+  // ---- TODAY ----
+  function updateTodayUI() {
+    const s = loadSettings();
+    const totalCal = todayLog.reduce((a, e) => a + e.calories, 0);
+    const totalPro = todayLog.reduce((a, e) => a + e.protein_g, 0);
+
+    document.getElementById('calCurrent').textContent = totalCal.toLocaleString();
+    document.getElementById('proCurrent').textContent = totalPro + 'g';
+
+    const calBar = document.getElementById('calBar');
+    calBar.style.width = Math.min((totalCal / s.calGoal) * 100, 100) + '%';
+    calBar.className = 'progress-fill cal-fill' + (totalCal > s.calGoal ? ' over' : '');
+    document.getElementById('proBar').style.width = Math.min((totalPro / s.proGoal) * 100, 100) + '%';
+
+    const calLeft = s.calGoal - totalCal, proLeft = s.proGoal - totalPro;
+    document.getElementById('calRemaining').textContent =
+      calLeft >= 0 ? calLeft.toLocaleString() + ' remaining' : Math.abs(calLeft).toLocaleString() + ' over goal';
+    document.getElementById('proRemaining').textContent =
+      proLeft >= 0 ? proLeft + 'g remaining' : Math.abs(proLeft) + 'g over goal';
+
+    const listEl = document.getElementById('logList');
+    listEl.innerHTML = todayLog.length === 0
+      ? '<div class="empty-state">Nothing logged yet today.</div>'
+      : todayLog.map((e, i) => `
+          <div class="log-entry">
+            <div style="flex:1">
+              <div class="entry-name">${e.name}</div>
+              ${e.note ? `<div class="entry-note">${e.note}</div>` : ''}
+            </div>
+            <div class="entry-macros">
+              <div class="entry-cal">${e.calories} cal</div>
+              <div class="entry-pro">${e.protein_g}g protein</div>
+            </div>
+            <button class="delete-btn" onclick="deleteEntry(${i})">&#215;</button>
+          </div>`).join('');
+  }
+
+  function deleteEntry(i) { todayLog.splice(i, 1); saveLog(today(), todayLog); updateTodayUI(); }
+
+  function resetDay() {
+    if (confirm('Clear today\'s entire log?')) {
+      todayLog = []; saveLog(today(), todayLog); updateTodayUI();
+      clearPhoto(); document.getElementById('aiResponse').innerHTML = '';
+    }
+  }
+
+  function handlePhoto(event) {
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const [, b64] = e.target.result.split(',');
+      pendingImageData = b64; pendingMediaType = file.type || 'image/jpeg';
+      document.getElementById('previewImg').src = e.target.result;
+      document.getElementById('previewWrap').style.display = 'block';
+      document.getElementById('photoHint').style.display = 'block';
+      document.getElementById('photoBtn').classList.add('has-photo');
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  }
+
+  function clearPhoto() {
+    pendingImageData = null; pendingMediaType = null;
+    document.getElementById('previewWrap').style.display = 'none';
+    document.getElementById('photoHint').style.display = 'none';
+    document.getElementById('photoBtn').classList.remove('has-photo');
+    document.getElementById('previewImg').src = '';
+  }
+
+  async function logFood() {
+    const s = loadSettings();
+    const input = document.getElementById('foodInput');
+    const btn = document.getElementById('logBtn');
+    const text = input.value.trim();
+    if (!text && !pendingImageData) return;
+
+    btn.disabled = true;
+    document.getElementById('aiResponse').innerHTML = '<div class="loading">Analyzing' + (pendingImageData ? ' photo' : '') + '...</div>';
+
+    const systemPrompt = `You are a nutrition assistant. This person's daily goals:
+- Calories: ${s.calGoal} cal/day
+- Protein: ${s.proGoal}g/day
+- Maintenance: ~${s.maintenance} cal/day
+
+Respond with JSON ONLY. No markdown, no backticks.
+Format: {"items":[{"name":"Food name","calories":number,"protein_g":number,"note":"brief note"}],"response":"1-2 sentence comment. If photo, note it's a visual estimate. Flag low protein foods."}
+For images: identify foods, estimate portions from plate/context, estimate macros. Keep response short and direct.`;
+
+    const userContent = pendingImageData
+      ? [
+          { type: 'image', source: { type: 'base64', media_type: pendingMediaType, data: pendingImageData } },
+          { type: 'text', text: text || 'What did I eat? Estimate calories and protein.' }
+        ]
+      : text;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, system: systemPrompt, messages: [{ role: 'user', content: userContent }] })
+      });
+
+      const data = await res.json();
+      const rawText = data.content.map(b => b.text || '').join('');
+      let parsed;
+      try { parsed = JSON.parse(rawText); }
+      catch { const m = rawText.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : null; }
+
+      if (parsed && parsed.items) {
+        parsed.items.forEach(item => todayLog.push({ name: item.name, calories: item.calories, protein_g: item.protein_g, note: item.note || '' }));
+        saveLog(today(), todayLog);
+        updateTodayUI();
+        input.value = ''; clearPhoto();
+        document.getElementById('aiResponse').innerHTML = `<div class="ai-bubble"><div class="ai-label">Claude</div>${parsed.response || ''}</div>`;
+      } else {
+        document.getElementById('aiResponse').innerHTML = '<div class="ai-bubble"><div class="ai-label">Claude</div>Could not read that &mdash; try a clearer photo or describe the food.</div>';
+      }
+    } catch(err) {
+      document.getElementById('aiResponse').innerHTML = '<div class="ai-bubble"><div class="ai-label">Error</div>Something went wrong. Check your connection.</div>';
+    }
+    btn.disabled = false;
+  }
+
+  document.getElementById('foodInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); logFood(); }
+  });
+
+  // ---- WEEK ----
+  function renderWeek() {
+    const s = loadSettings();
+    const dates = getWeekDates();
+    const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const todayStr = today();
+    let totalCal = 0, totalDays = 0, totalDeficit = 0;
+
+    const gridHTML = dates.map((date, i) => {
+      const log = loadLog(date);
+      const cal = log.reduce((a, e) => a + e.calories, 0);
+      const hasData = log.length > 0;
+      if (hasData) { totalCal += cal; totalDays++; totalDeficit += s.maintenance - cal; }
+      const pct = hasData ? Math.min((cal / s.calGoal) * 100, 100) : 0;
+      const isToday = date === todayStr;
+      let calClass = 'empty';
+      if (hasData) calClass = cal > s.calGoal ? 'over' : 'good';
+      return `<div class="week-day${isToday ? ' today' : ''}">
+        <div class="week-day-name">${dayNames[i]}</div>
+        <div class="week-day-cal ${calClass}">${hasData ? cal : '&mdash;'}</div>
+        <div class="week-day-bar"><div class="week-day-fill${cal > s.calGoal ? ' over' : ''}" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('weekGrid').innerHTML = gridHTML;
+    const avgCal = totalDays > 0 ? Math.round(totalCal / totalDays) : 0;
+    const lbsLost = (totalDeficit / 3500).toFixed(2);
+    const deficitClass = totalDeficit >= 0 ? 'deficit-positive' : 'deficit-negative';
+
+    document.getElementById('weekSummary').innerHTML = `
+      <div class="week-stat-row">
+        <span class="week-stat-label">Weekly deficit</span>
+        <span class="week-stat-val ${deficitClass}">${totalDeficit >= 0 ? '+' : ''}${totalDeficit.toLocaleString()} cal</span>
+      </div>
+      <div class="progress-bar" style="margin-bottom:10px">
+        <div class="progress-fill cal-fill" style="width:${Math.min(Math.abs(totalDeficit)/3500*100,100)}%"></div>
+      </div>
+      <div class="week-stat-row">
+        <span class="week-stat-label">Est. fat loss</span>
+        <span class="week-stat-val" style="color:var(--accent3)">${lbsLost} lbs</span>
+      </div>
+      <div class="week-stat-row" style="margin-top:8px;margin-bottom:0">
+        <span class="week-stat-label">Avg daily cal</span>
+        <span class="week-stat-val" style="font-size:0.85rem;color:var(--text)">${totalDays > 0 ? avgCal.toLocaleString() : '&mdash;'}</span>
+      </div>`;
+  }
+
+  // ---- WEIGHT ----
+  function logWeight() {
+    const s = loadSettings();
+    const input = document.getElementById('weightInput');
+    const val = parseFloat(input.value);
+    if (isNaN(val) || val < 50 || val > 600) return;
+    const weights = loadWeights();
+    const todayStr = today();
+    const existing = weights.findIndex(w => w.date === todayStr);
+    if (existing >= 0) weights[existing].weight = val;
+    else weights.push({ date: todayStr, weight: val });
+    weights.sort((a, b) => a.date.localeCompare(b.date));
+    saveWeights(weights);
+    input.value = '';
+    renderWeight();
+  }
+
+  function deleteWeight(i) { const w = loadWeights(); w.splice(i, 1); saveWeights(w); renderWeight(); }
+
+  function renderWeight() {
+    const s = loadSettings();
+    const weights = loadWeights();
+    const latest = weights.length > 0 ? weights[weights.length - 1].weight : s.startWeight;
+    const lost = s.startWeight - latest;
+    const remaining = latest - s.goalWeight;
+    const range = s.startWeight - s.goalWeight;
+    const pct = range > 0 ? Math.min(Math.max((lost / range) * 100, 0), 100) : 0;
+
+    document.getElementById('goalProgressCard').innerHTML = `
+      <div class="goal-progress-card">
+        <div>
+          <div class="gp-label">Current</div>
+          <div class="gp-val" style="color:var(--accent3)">${latest} lbs</div>
+          <div class="gp-sub">${lost > 0 ? lost.toFixed(1) + ' lbs lost' : 'Starting weight'}</div>
+        </div>
+        <div class="gp-divider"></div>
+        <div>
+          <div class="gp-label">To goal</div>
+          <div class="gp-val" style="color:var(--accent)">${Math.max(remaining,0).toFixed(1)} lbs</div>
+          <div class="gp-sub">Goal: ${s.goalWeight} lbs</div>
+        </div>
+        <div class="gp-divider"></div>
+        <div>
+          <div class="gp-label">Progress</div>
+          <div class="gp-val" style="color:var(--text)">${pct.toFixed(0)}%</div>
+          <div class="gp-sub">${pct >= 100 ? 'Goal reached!' : 'Keep going'}</div>
+        </div>
+      </div>
+      <div class="progress-bar" style="margin-bottom:16px">
+        <div class="progress-fill" style="width:${pct}%;background:var(--accent3)"></div>
+      </div>`;
+
+    renderChart(weights, s);
+
+    const listEl = document.getElementById('weightList');
+    if (weights.length === 0) { listEl.innerHTML = '<div class="empty-state">No weight entries yet.</div>'; return; }
+    const reversed = [...weights].reverse();
+    listEl.innerHTML = reversed.map((w, ri) => {
+      const i = weights.length - 1 - ri;
+      const prev = weights[i - 1];
+      let deltaHTML = '';
+      if (prev) {
+        const delta = w.weight - prev.weight;
+        deltaHTML = `<span class="weight-entry-delta ${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '+' : ''}${delta.toFixed(1)}</span>`;
+      }
+      const dateStr = new Date(w.date + 'T12:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric' });
+      return `<div class="weight-entry">
+        <span class="weight-entry-date">${dateStr}</span>
+        <span class="weight-entry-val">${w.weight} lbs</span>
+        ${deltaHTML}
+        <button class="weight-del-btn" onclick="deleteWeight(${i})">&#215;</button>
+      </div>`;
+    }).join('');
+  }
+
+  function renderChart(weights, s) {
+    const svg = document.getElementById('weightChart');
+    const W = 300, H = 120, pad = { top: 12, right: 20, bottom: 20, left: 32 };
+    if (weights.length === 0) {
+      svg.innerHTML = `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#444" font-family="DM Mono,monospace" font-size="10">No data yet</text>`;
+      return;
+    }
+    const all = [s.startWeight, s.goalWeight, ...weights.map(w => w.weight)];
+    const minW = Math.min(...all) - 1, maxW = Math.max(...all) + 1;
+    const cW = W - pad.left - pad.right, cH = H - pad.top - pad.bottom;
+    const xPos = (i, total) => total === 1 ? pad.left + cW / 2 : pad.left + (i / (total - 1)) * cW;
+    const yPos = w => pad.top + cH - ((w - minW) / (maxW - minW)) * cH;
+    const goalY = yPos(s.goalWeight);
+    const points = weights.map((w, i) => ({ x: xPos(i, weights.length), y: yPos(w.weight) }));
+    const pathD = points.map((p, i) => `${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    let html = '';
+    [0, 0.5, 1].forEach(t => {
+      const y = pad.top + t * cH;
+      html += `<line x1="${pad.left}" y1="${y.toFixed(1)}" x2="${W-pad.right}" y2="${y.toFixed(1)}" stroke="#222" stroke-width="1"/>`;
+    });
+    html += `<line x1="${pad.left}" y1="${goalY.toFixed(1)}" x2="${W-pad.right}" y2="${goalY.toFixed(1)}" stroke="#c8f060" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>`;
+    html += `<text x="${W-pad.right+2}" y="${goalY+3}" fill="#c8f060" font-size="7" font-family="DM Mono,monospace" opacity="0.7">${s.goalWeight}</text>`;
+    if (points.length > 1) html += `<path d="${pathD}" fill="none" stroke="#f0a060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+    points.forEach(p => { html += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="#f0a060"/>`; });
+    [maxW, (maxW+minW)/2, minW].forEach((v, i) => {
+      const y = pad.top + (i * cH / 2);
+      html += `<text x="${pad.left-4}" y="${(y+3).toFixed(1)}" text-anchor="end" fill="#555" font-size="7" font-family="DM Mono,monospace">${Math.round(v)}</text>`;
+    });
+    if (weights.length >= 1) {
+      const fmt = d => new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      html += `<text x="${pad.left}" y="${H-4}" fill="#555" font-size="7" font-family="DM Mono,monospace">${fmt(weights[0].date)}</text>`;
+      if (weights.length > 1) html += `<text x="${W-pad.right}" y="${H-4}" text-anchor="end" fill="#555" font-size="7" font-family="DM Mono,monospace">${fmt(weights[weights.length-1].date)}</text>`;
+    }
+    svg.innerHTML = html;
+  }
+
+  // ---- INIT ----
+  document.getElementById('dateLabel').textContent =
+    new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+  const initSettings = loadSettings();
+  applySettings(initSettings);
+</script>
+</body>
+</html>
