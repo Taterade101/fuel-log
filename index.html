@@ -544,7 +544,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.0';
+  const APP_VERSION = 'v2.0.1';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1192,14 +1192,7 @@ If the user references a previous meal (e.g. "same breakfast as yesterday"), use
     t.textContent = msg; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2500);
   }
-  async function updateApp() {
-    try {
-      const res = await fetch(window.location.pathname + '?_=' + Date.now());
-      const html = await res.text();
-      const match = html.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
-      const latest = match ? match[1] : null;
-      if (latest && latest === APP_VERSION) { showToast('Already on ' + APP_VERSION + ' — up to date'); return; }
-    } catch(e) {}
+  function updateApp() {
     const key = getApiKey();
     if (key) sessionStorage.setItem('fuelApiKeyTemp', key);
     window.location.href = window.location.pathname + '?v=' + Date.now();
