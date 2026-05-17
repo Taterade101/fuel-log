@@ -359,6 +359,77 @@
   .save-confirm { font-size: 13px; color: var(--accent); text-align: center; margin-top: 8px; display: none; font-weight: 600; }
   .info-box { background: var(--surface2); border-radius: var(--r-sm); border-left: 3px solid var(--accent2); padding: 10px 13px; font-size: 12px; line-height: 1.6; color: var(--muted); margin-bottom: 16px; }
 
+  /* ── FOOD ROW EDITABLE ── */
+  .food-row.editable { cursor: pointer; }
+  .food-row.editable:hover { background: var(--surface2); }
+
+  /* ── EDIT OVERLAY ── */
+  .edit-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.72);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .edit-overlay.open { display: flex; }
+  @keyframes editSlideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .edit-modal {
+    background: var(--surface); border-radius: var(--r);
+    border: 1px solid var(--border);
+    padding: 18px; width: 100%; max-width: 380px;
+    animation: editSlideUp 0.18s ease;
+  }
+  .edit-modal-hdr { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 10px; }
+  .edit-modal-title { font-size: 14px; font-weight: 700; color: var(--text); flex: 1; line-height: 1.35; }
+  .edit-close-btn {
+    background: var(--surface2); border: none; color: var(--muted);
+    width: 26px; height: 26px; border-radius: 50%; font-size: 15px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: color 0.15s; font-family: 'Inter', sans-serif;
+  }
+  .edit-close-btn:hover { color: var(--text); }
+  .edit-field { margin-bottom: 12px; }
+  .edit-field-label { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 4px; }
+  .edit-num-input {
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: var(--r-sm); color: var(--text);
+    font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 700;
+    padding: 8px 10px; outline: none; transition: border-color 0.2s;
+    -moz-appearance: textfield; font-variant-numeric: tabular-nums; width: 100%;
+  }
+  .edit-num-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .edit-num-input:focus { border-color: rgba(52,211,153,0.35); }
+  .edit-num-input.cal { color: var(--accent); }
+  .edit-num-input.pro { color: var(--accent2); }
+  .edit-qty-row { display: flex; align-items: center; gap: 7px; }
+  .edit-qty-row .edit-num-input { flex: 1; min-width: 0; text-align: center; }
+  .edit-step-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--r-sm); color: var(--text);
+    width: 36px; height: 38px; font-size: 18px; line-height: 1;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.15s; font-family: 'Inter', sans-serif;
+  }
+  .edit-step-btn:hover { background: var(--accent-dim); color: var(--accent); border-color: rgba(52,211,153,0.25); }
+  .edit-qty-unit { font-size: 12px; color: var(--muted); white-space: nowrap; min-width: 32px; }
+  .edit-macro-row { display: flex; gap: 10px; margin-bottom: 13px; }
+  .edit-macro-row .edit-field { flex: 1; margin-bottom: 0; }
+  .edit-actions { display: flex; flex-direction: column; gap: 7px; margin-top: 2px; }
+  .edit-save-btn {
+    background: var(--accent); color: #0C0C0E; border: none;
+    border-radius: var(--r); font-family: 'Inter', sans-serif;
+    font-size: 13px; font-weight: 700; padding: 11px;
+    cursor: pointer; transition: opacity 0.2s; width: 100%;
+  }
+  .edit-save-btn:hover { opacity: 0.87; }
+  .edit-cancel-btn {
+    background: var(--surface2); color: var(--muted); border: none;
+    border-radius: var(--r); font-family: 'Inter', sans-serif;
+    font-size: 12px; font-weight: 600; padding: 9px;
+    cursor: pointer; transition: color 0.2s; width: 100%;
+  }
+  .edit-cancel-btn:hover { color: var(--text); }
+
   /* ── TOAST ── */
   .toast {
     position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
@@ -375,6 +446,43 @@
 <body>
 
 <div class="toast" id="toast"></div>
+
+<!-- EDIT OVERLAY -->
+<div id="editOverlay" class="edit-overlay" onclick="handleOverlayClick(event)">
+  <div class="edit-modal">
+    <div class="edit-modal-hdr">
+      <span class="edit-modal-title" id="editItemName"></span>
+      <button class="edit-close-btn" onclick="closeEditOverlay()">&#215;</button>
+    </div>
+    <div class="edit-field">
+      <label class="edit-field-label">Servings / quantity</label>
+      <div class="edit-qty-row">
+        <button class="edit-step-btn" onclick="stepEditQty(-1)">&#8722;</button>
+        <input type="number" id="editQty" class="edit-num-input" min="0.5" step="0.5" oninput="recalcEdit()" />
+        <button class="edit-step-btn" onclick="stepEditQty(1)">&#43;</button>
+        <span class="edit-qty-unit" id="editQtyUnit"></span>
+      </div>
+    </div>
+    <div class="edit-macro-row">
+      <div class="edit-field">
+        <label class="edit-field-label">Calories</label>
+        <input type="number" id="editCal" class="edit-num-input cal" min="0" />
+      </div>
+      <div class="edit-field">
+        <label class="edit-field-label">Protein (g)</label>
+        <input type="number" id="editPro" class="edit-num-input pro" min="0" step="0.1" />
+      </div>
+    </div>
+    <div class="edit-field" style="margin-bottom:14px">
+      <label class="edit-field-label">Meal</label>
+      <div class="meal-pills" id="editMealPills" style="margin-bottom:0"></div>
+    </div>
+    <div class="edit-actions">
+      <button class="edit-save-btn" onclick="saveEditOverlay()">Save changes</button>
+      <button class="edit-cancel-btn" onclick="closeEditOverlay()">Cancel</button>
+    </div>
+  </div>
+</div>
 
 <header>
   <div class="header-row">
@@ -544,7 +652,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.0.1';
+  const APP_VERSION = 'v2.1.0';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -752,7 +860,7 @@
       const hasItems = itemsWithIdx.length > 0;
 
       const itemsHTML = itemsWithIdx.map(({ e, i }) => `
-        <div class="food-row">
+        <div class="food-row${!locked ? ' editable' : ''}"${!locked ? ` onclick="openEditOverlay(${i})"` : ''}>
           <div style="flex:1">
             <div class="food-name">${e.name}</div>
             ${e.note ? `<div class="food-note">${e.note}</div>` : ''}
@@ -761,7 +869,7 @@
             <div class="food-cal">${e.calories}</div>
             <div class="food-pro">${e.protein_g}g protein</div>
           </div>
-          ${!locked ? `<button class="food-del-btn" onclick="deleteEntry(${i})" aria-label="Delete">&#215;</button>` : ''}
+          ${!locked ? `<button class="food-del-btn" onclick="event.stopPropagation();deleteEntry(${i})" aria-label="Delete">&#215;</button>` : ''}
         </div>`).join('');
 
       const subtotalHTML = hasItems ? `
@@ -972,7 +1080,8 @@
 - Currently logging: ${mealLabel}${mealContext ? `\n\nPrevious day's meals for reference (${formatDateShort(prevDate)}):\n${mealContext}` : ''}
 
 Respond with JSON ONLY. No markdown, no backticks.
-Format: {"items":[{"name":"Food name","calories":number,"protein_g":number,"note":"brief note"}],"response":"1-2 sentence comment. If photo, note it's a visual estimate. Flag low protein foods."}
+Format: {"items":[{"name":"Food name","calories":number,"protein_g":number,"note":"brief note","quantity":number,"quantity_unit":"unit (eggs, slices, cups, oz, g, serving)","cal_per_unit":number,"protein_per_unit":number}],"response":"1-2 sentence comment. If photo, note it's a visual estimate. Flag low protein foods."}
+Always include quantity, quantity_unit, cal_per_unit, and protein_per_unit. calories must equal quantity × cal_per_unit. protein_g must equal quantity × protein_per_unit.
 For images: identify foods, estimate portions from context, estimate macros.
 If the user references a previous meal (e.g. "same breakfast as yesterday"), use the provided meal history to look it up accurately and replicate those exact items.`;
 
@@ -997,10 +1106,22 @@ If the user references a previous meal (e.g. "same breakfast as yesterday"), use
       try { parsed = JSON.parse(rawText); }
       catch { const m = rawText.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : null; }
       if (parsed && parsed.items) {
-        parsed.items.forEach(item => currentDayLog.push({
-          name: item.name, calories: item.calories, protein_g: item.protein_g,
-          note: item.note || '', meal: selectedMeal  // ← meal stored with every entry
-        }));
+        parsed.items.forEach(item => {
+          const qty = item.quantity || 1;
+          const cal = item.calories || 0;
+          const pro = item.protein_g || 0;
+          currentDayLog.push({
+            name: item.name,
+            calories: cal,
+            protein_g: pro,
+            note: item.note || '',
+            meal: selectedMeal,
+            quantity: qty,
+            quantity_unit: item.quantity_unit || 'serving',
+            cal_per_unit: item.cal_per_unit != null ? item.cal_per_unit : Math.round((cal / qty) * 10) / 10,
+            protein_per_unit: item.protein_per_unit != null ? item.protein_per_unit : Math.round((pro / qty) * 10) / 10,
+          });
+        });
         saveLog(selectedDate, currentDayLog);
         updateDayUI(); renderDayNav();
         input.value = ''; clearPhoto();
@@ -1017,6 +1138,80 @@ If the user references a previous meal (e.g. "same breakfast as yesterday"), use
       document.getElementById('aiResponse').innerHTML = '<div class="ai-bubble"><div class="ai-label">Error</div>' + (err && err.message ? err.message : 'Unknown error') + '</div>';
     }
     btn.disabled = false;
+  }
+
+  // ---- EDIT OVERLAY ----
+  let editingIndex = null;
+  let editCalPerUnit = null;
+  let editProPerUnit = null;
+  let editingMeal = null;
+
+  function openEditOverlay(i) {
+    editingIndex = i;
+    const e = currentDayLog[i];
+    document.getElementById('editItemName').textContent = e.name;
+    const qty = e.quantity || 1;
+    // Use stored per-unit values if available, otherwise derive from totals ÷ quantity
+    editCalPerUnit = (e.cal_per_unit != null) ? e.cal_per_unit : (e.calories / qty);
+    editProPerUnit = (e.protein_per_unit != null) ? e.protein_per_unit : (e.protein_g / qty);
+    document.getElementById('editQty').value = qty;
+    document.getElementById('editQtyUnit').textContent = e.quantity_unit || 'serving';
+    document.getElementById('editCal').value = e.calories;
+    document.getElementById('editPro').value = e.protein_g;
+    renderEditMealPills(e.meal || 'snack');
+    document.getElementById('editOverlay').classList.add('open');
+  }
+
+  function renderEditMealPills(selectedKey) {
+    editingMeal = selectedKey;
+    document.getElementById('editMealPills').innerHTML = MEALS.map(m =>
+      `<button class="mpill${m.key === selectedKey ? ' sel' : ''}" onclick="selectEditMeal('${m.key}')">${m.label}</button>`
+    ).join('');
+  }
+
+  function selectEditMeal(key) { renderEditMealPills(key); }
+
+  function stepEditQty(dir) {
+    const input = document.getElementById('editQty');
+    const val = parseFloat(input.value) || 1;
+    const next = Math.max(0.5, Math.round((val + dir) * 2) / 2);
+    input.value = next;
+    recalcEdit();
+  }
+
+  function recalcEdit() {
+    const qty = parseFloat(document.getElementById('editQty').value) || 1;
+    document.getElementById('editCal').value = Math.round(qty * editCalPerUnit);
+    document.getElementById('editPro').value = Math.round(qty * editProPerUnit * 10) / 10;
+  }
+
+  function saveEditOverlay() {
+    if (editingIndex === null) return;
+    const qty = parseFloat(document.getElementById('editQty').value) || 1;
+    const cal = parseInt(document.getElementById('editCal').value) || 0;
+    const pro = parseFloat(document.getElementById('editPro').value) || 0;
+    currentDayLog[editingIndex] = Object.assign({}, currentDayLog[editingIndex], {
+      calories: cal,
+      protein_g: pro,
+      quantity: qty,
+      // Recalculate per-unit from final values so future edits stay accurate
+      cal_per_unit: Math.round((cal / qty) * 10) / 10,
+      protein_per_unit: Math.round((pro / qty) * 10) / 10,
+      meal: editingMeal || currentDayLog[editingIndex].meal,
+    });
+    saveLog(selectedDate, currentDayLog);
+    updateDayUI(); renderDayNav();
+    closeEditOverlay();
+    showToast('Entry updated');
+  }
+
+  function closeEditOverlay() {
+    document.getElementById('editOverlay').classList.remove('open');
+    editingIndex = null; editCalPerUnit = null; editProPerUnit = null; editingMeal = null;
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('editOverlay')) closeEditOverlay();
   }
 
   document.getElementById('foodInput').addEventListener('keydown', e => {
