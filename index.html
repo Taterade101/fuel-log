@@ -652,7 +652,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.1.0';
+  const APP_VERSION = 'v2.1.1';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1387,10 +1387,27 @@ If the user references a previous meal (e.g. "same breakfast as yesterday"), use
     t.textContent = msg; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2500);
   }
-  function updateApp() {
-    const key = getApiKey();
-    if (key) sessionStorage.setItem('fuelApiKeyTemp', key);
-    window.location.href = window.location.pathname + '?v=' + Date.now();
+  async function updateApp() {
+    const btn = document.querySelector('.update-btn');
+    const orig = btn.textContent;
+    btn.textContent = 'Checking…'; btn.disabled = true;
+    try {
+      const res = await fetch(window.location.pathname + '?v=' + Date.now(), { cache: 'no-store' });
+      const html = await res.text();
+      const m = html.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
+      const latest = m ? m[1] : null;
+      if (!latest || latest === APP_VERSION) {
+        showToast('Already up to date (' + APP_VERSION + ')');
+        btn.textContent = orig; btn.disabled = false;
+        return;
+      }
+      const key = getApiKey();
+      if (key) sessionStorage.setItem('fuelApiKeyTemp', key);
+      window.location.href = window.location.pathname + '?v=' + Date.now();
+    } catch(e) {
+      showToast('Could not check for updates');
+      btn.textContent = orig; btn.disabled = false;
+    }
   }
   (function() {
     const temp = sessionStorage.getItem('fuelApiKeyTemp');
