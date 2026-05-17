@@ -6,6 +6,9 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fuel Log">
 <title>Fuel Log</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&display=swap');
@@ -287,7 +290,7 @@
 <body>
 
 <header>
-  <h1>FUEL LOG</h1>
+  <h1>FUEL LOG <span id="versionBadge" style="font-family:'DM Mono',monospace;font-size:0.5rem;font-weight:400;color:var(--muted);letter-spacing:2px;vertical-align:middle;position:relative;top:-5px"></span></h1>
   <div class="subtitle" id="headerSubtitle">Loading...</div>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;margin-bottom:0">
     <div class="subtitle" id="headerSubtitle2" style="display:none"></div>
@@ -355,9 +358,9 @@
   <div class="section-label">Daily breakdown</div>
   <div class="week-grid" id="weekGrid"></div>
   <div class="section-label">Deficit explained</div>
-  <div class="ai-bubble" style="border-left-color:var(--accent2)">
+  <div class="ai-bubble" id="deficitExplainer" style="border-left-color:var(--accent2)">
     <div class="ai-label" style="color:var(--accent2)">How it works</div>
-    Your maintenance is ~2,500 cal/day. Eating at your calorie goal creates a daily deficit. Over 7 days, 3,500 cal deficit = ~1 lb of fat. The weekly total below shows your actual progress based on what you've logged.
+    <span id="deficitExplainerText"></span>
   </div>
 </div>
 
@@ -438,6 +441,41 @@
 </div>
 
 <script>
+  // ---- VERSION ----
+  const APP_VERSION = 'v1.1';
+
+  // ---- PWA SETUP ----
+  function setupPWA() {
+    // Inject manifest so Safari treats this as a standalone app
+    const manifest = {
+      name: 'Fuel Log', short_name: 'Fuel Log',
+      start_url: '/fuel-log/', display: 'standalone',
+      background_color: '#0e0e0e', theme_color: '#0e0e0e', icons: []
+    };
+    const ml = document.createElement('link');
+    ml.rel = 'manifest';
+    ml.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
+    document.head.appendChild(ml);
+
+    // Generate home screen icon via canvas (dark bg + "FL" in accent green)
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 180; canvas.height = 180;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#0e0e0e';
+      ctx.fillRect(0, 0, 180, 180);
+      ctx.fillStyle = '#c8f060';
+      ctx.font = '900 80px Georgia, serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('FL', 90, 95);
+      const il = document.createElement('link');
+      il.rel = 'apple-touch-icon';
+      il.href = canvas.toDataURL('image/png');
+      document.head.appendChild(il);
+    } catch(e) { /* canvas unavailable — icon falls back to Safari default */ }
+  }
+
   // ---- SETTINGS ----
   function getApiKey() { return localStorage.getItem('fuelApiKey') || ''; }
 
@@ -453,7 +491,7 @@
     const c = document.getElementById('apiKeyConfirm');
     c.style.display = 'block';
     setTimeout(() => c.style.display = 'none', 2000);
-    document.getElementById('apiKeyStatus').textContent = 'Key saved \u2014 you\'re all set.';
+    document.getElementById('apiKeyStatus').textContent = 'Key saved — you\'re all set.';
     document.getElementById('apiKeyStatus').style.color = 'var(--accent)';
   }
 
@@ -486,7 +524,7 @@
     // Header
     const name = s.name ? s.name + "'s " : '';
     document.getElementById('headerSubtitle').textContent =
-      (s.startWeight + ' \u2192 ' + s.goalWeight + ' lbs \u2022 ' + s.calGoal.toLocaleString() + ' cal \u2022 ' + s.proGoal + 'g protein').toUpperCase();
+      (s.startWeight + ' → ' + s.goalWeight + ' lbs • ' + s.calGoal.toLocaleString() + ' cal • ' + s.proGoal + 'g protein').toUpperCase();
     document.title = name ? name + 'Fuel Log' : 'Fuel Log';
 
     // Today targets
@@ -500,7 +538,7 @@
     const hasKey = !!getApiKey();
     const statusEl = document.getElementById('apiKeyStatus');
     if (statusEl) {
-      statusEl.textContent = hasKey ? '\u2713 API key is saved' : '\u26a0 No API key yet \u2014 logging won\'t work without one';
+      statusEl.textContent = hasKey ? '✓ API key is saved' : '⚠ No API key yet — logging won\'t work without one';
       statusEl.style.color = hasKey ? 'var(--accent)' : 'var(--danger)';
     }
     document.getElementById('s-name').value = s.name || '';
@@ -712,6 +750,12 @@ For images: identify foods, estimate portions from plate/context, estimate macro
     const lbsLost = (totalDeficit / 3500).toFixed(2);
     const deficitClass = totalDeficit >= 0 ? 'deficit-positive' : 'deficit-negative';
 
+    const dailyDeficit = s.maintenance - s.calGoal;
+    const explainer = document.getElementById('deficitExplainerText');
+    if (explainer) {
+      explainer.textContent = `Your maintenance is ~${s.maintenance.toLocaleString()} cal/day. Eating at your ${s.calGoal.toLocaleString()} cal goal creates a ${dailyDeficit > 0 ? dailyDeficit.toLocaleString() + ' cal daily deficit' : 'daily surplus of ' + Math.abs(dailyDeficit).toLocaleString() + ' cal'}. Over 7 days, 3,500 cal deficit = ~1 lb of fat. The weekly total above shows your actual progress based on what you've logged.`;
+    }
+
     document.getElementById('weekSummary').innerHTML = `
       <div class="week-stat-row">
         <span class="week-stat-label">Weekly deficit</span>
@@ -863,6 +907,8 @@ For images: identify foods, estimate portions from plate/context, estimate macro
   })();
 
   // ---- INIT ----
+  setupPWA();
+  document.getElementById('versionBadge').textContent = APP_VERSION;
   document.getElementById('dateLabel').textContent =
     new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
