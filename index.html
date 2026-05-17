@@ -646,6 +646,12 @@ For images: identify foods, estimate portions from plate/context, estimate macro
       });
 
       const data = await res.json();
+      if (!res.ok) {
+        const errMsg = (data.error && data.error.message) ? data.error.message : ('API error ' + res.status);
+        document.getElementById('aiResponse').innerHTML = '<div class="ai-bubble"><div class="ai-label">Error</div>' + errMsg + '</div>';
+        btn.disabled = false;
+        return;
+      }
       const rawText = data.content.map(b => b.text || '').join('');
       let parsed;
       try { parsed = JSON.parse(rawText); }
@@ -661,7 +667,7 @@ For images: identify foods, estimate portions from plate/context, estimate macro
         document.getElementById('aiResponse').innerHTML = '<div class="ai-bubble"><div class="ai-label">Claude</div>Could not read that &mdash; try a clearer photo or describe the food.</div>';
       }
     } catch(err) {
-      document.getElementById('aiResponse').innerHTML = '<div class="ai-bubble"><div class="ai-label">Error</div>Something went wrong. Check your connection.</div>';
+      document.getElementById('aiResponse').innerHTML = '<div class="ai-bubble"><div class="ai-label">Error</div>' + (err && err.message ? err.message : 'Unknown error') + '</div>';
     }
     btn.disabled = false;
   }
