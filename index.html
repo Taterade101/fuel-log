@@ -414,10 +414,42 @@
 
   <button class="save-btn" onclick="saveSettings()">Save settings</button>
   <div class="save-confirm" id="saveConfirm">&#10003; Saved!</div>
+
+  <div class="settings-card" style="margin-top:16px">
+    <h3>API Key</h3>
+    <div class="info-box" style="margin-bottom:12px">
+      Get your key at <strong>console.anthropic.com</strong> &rarr; API Keys. Each person enters their own on their browser. The key is stored locally and never shared.
+    </div>
+    <div class="field">
+      <label>Anthropic API key</label>
+      <input type="password" id="s-apikey" placeholder="sk-ant-..." autocomplete="off" style="font-size:0.75rem" />
+    </div>
+    <button class="save-btn" onclick="saveApiKey()" style="margin-top:4px">Save API key</button>
+    <div class="save-confirm" id="apiKeyConfirm">&#10003; Key saved!</div>
+    <div id="apiKeyStatus" style="font-size:0.62rem;color:var(--muted);margin-top:8px;text-align:center"></div>
+  </div>
 </div>
 
 <script>
   // ---- SETTINGS ----
+  function getApiKey() { return localStorage.getItem('fuelApiKey') || ''; }
+
+  function saveApiKey() {
+    const val = document.getElementById('s-apikey').value.trim();
+    if (!val.startsWith('sk-ant-')) {
+      document.getElementById('apiKeyStatus').textContent = 'That doesn\'t look right — keys start with sk-ant-';
+      document.getElementById('apiKeyStatus').style.color = 'var(--danger)';
+      return;
+    }
+    localStorage.setItem('fuelApiKey', val);
+    document.getElementById('s-apikey').value = '';
+    const c = document.getElementById('apiKeyConfirm');
+    c.style.display = 'block';
+    setTimeout(() => c.style.display = 'none', 2000);
+    document.getElementById('apiKeyStatus').textContent = 'Key saved \u2014 you\'re all set.';
+    document.getElementById('apiKeyStatus').style.color = 'var(--accent)';
+  }
+
   function defaultSettings() {
     return { name: '', calGoal: 2000, proGoal: 160, maintenance: 2500, startWeight: 186, goalWeight: 175 };
   }
@@ -458,6 +490,12 @@
   }
 
   function populateSettingsForm(s) {
+    const hasKey = !!getApiKey();
+    const statusEl = document.getElementById('apiKeyStatus');
+    if (statusEl) {
+      statusEl.textContent = hasKey ? '\u2713 API key is saved' : '\u26a0 No API key yet \u2014 logging won\'t work without one';
+      statusEl.style.color = hasKey ? 'var(--accent)' : 'var(--danger)';
+    }
     document.getElementById('s-name').value = s.name || '';
     document.getElementById('s-cal').value = s.calGoal;
     document.getElementById('s-pro').value = s.proGoal;
@@ -577,6 +615,10 @@
     const text = input.value.trim();
     if (!text && !pendingImageData) return;
 
+    if (!getApiKey()) {
+      document.getElementById('aiResponse').innerHTML = '<div class="ai-bubble" style="border-left-color:var(--danger)"><div class="ai-label" style="color:var(--danger)">Setup needed</div>Go to Settings and enter your Anthropic API key first.</div>';
+      return;
+    }
     btn.disabled = true;
     document.getElementById('aiResponse').innerHTML = '<div class="loading">Analyzing' + (pendingImageData ? ' photo' : '') + '...</div>';
 
@@ -599,7 +641,7 @@ For images: identify foods, estimate portions from plate/context, estimate macro
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-api-key': getApiKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
         body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, system: systemPrompt, messages: [{ role: 'user', content: userContent }] })
       });
 
