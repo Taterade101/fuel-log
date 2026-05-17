@@ -12,7 +12,6 @@
 <title>Fuel Log</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&display=swap');
-
   :root {
     --bg: #0e0e0e;
     --surface: #161616;
@@ -24,9 +23,7 @@
     --muted: #555;
     --danger: #f06060;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   body {
     background: var(--bg);
     color: var(--text);
@@ -34,74 +31,66 @@
     min-height: 100vh;
     padding: 0 0 80px;
   }
-
-  header {
-    padding: 20px 16px 0;
-    border-bottom: 1px solid var(--border);
-  }
-
+  header { padding: 20px 16px 0; border-bottom: 1px solid var(--border); }
   h1 {
     font-family: 'Playfair Display', serif;
-    font-size: 1.8rem;
-    font-weight: 900;
-    color: var(--accent);
-    line-height: 1;
-    letter-spacing: -1px;
+    font-size: 1.8rem; font-weight: 900;
+    color: var(--accent); line-height: 1; letter-spacing: -1px;
   }
-
-  .subtitle {
-    font-size: 0.65rem;
-    color: var(--muted);
-    margin-top: 3px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-
-  .tabs {
-    display: flex;
-    margin-top: 16px;
-  }
-
+  .subtitle { font-size: 0.65rem; color: var(--muted); margin-top: 3px; letter-spacing: 2px; text-transform: uppercase; }
+  .tabs { display: flex; margin-top: 16px; }
   .tab {
-    flex: 1;
-    background: none;
-    border: none;
-    border-bottom: 2px solid var(--border);
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.58rem;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    padding: 10px 4px;
-    cursor: pointer;
-    transition: all 0.2s;
+    flex: 1; background: none; border: none;
+    border-bottom: 2px solid var(--border); color: var(--muted);
+    font-family: 'DM Mono', monospace; font-size: 0.58rem;
+    text-transform: uppercase; letter-spacing: 2px;
+    padding: 10px 4px; cursor: pointer; transition: all 0.2s;
   }
-
   .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
   .page { display: none; padding: 16px; }
   .page.active { display: block; }
 
-  .goals {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 20px;
+  /* DAY NAV */
+  .week-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0 8px;
   }
-
-  .goal-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px;
+  .week-nav-btn {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    font-family: 'DM Mono', monospace; font-size: 1rem;
+    width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
   }
+  .week-nav-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .week-nav-btn:disabled { opacity: 0.2; cursor: default; }
+  .week-nav-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
+  .day-tabs { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 14px; }
+  .day-tab {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 7px 2px; text-align: center; cursor: pointer; transition: all 0.2s;
+    font-family: 'DM Mono', monospace;
+  }
+  .day-tab:disabled { opacity: 0.25; cursor: default; pointer-events: none; }
+  .day-tab.active { border-color: var(--accent); background: rgba(200,240,96,0.06); }
+  .day-tab-name {
+    font-size: 0.5rem; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 1px; display: block; margin-bottom: 3px;
+  }
+  .day-tab.active .day-tab-name { color: var(--accent); }
+  .day-tab.is-today .day-tab-name { color: var(--text); }
+  .day-tab.active.is-today .day-tab-name { color: var(--accent); }
+  .day-tab-dot { font-size: 0.55rem; display: block; height: 12px; line-height: 12px; }
+  .day-tab.locked .day-tab-dot { color: var(--accent); }
+  .day-tab.has-data:not(.locked) .day-tab-dot { color: var(--accent3); }
 
+  /* GOALS */
+  .goals { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .goal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
   .goal-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
   .goal-numbers { font-size: 1rem; font-weight: 500; margin-bottom: 8px; }
   .goal-numbers .current { color: var(--accent); }
   .goal-numbers .slash { color: var(--muted); font-size: 0.75rem; }
   .goal-numbers .target { color: var(--text); font-size: 0.75rem; }
-
   .progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
   .progress-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
   .cal-fill { background: var(--accent); }
@@ -109,8 +98,8 @@
   .over { background: var(--danger) !important; }
   .remaining { font-size: 0.6rem; color: var(--muted); margin-top: 5px; }
 
+  /* LOG INPUT */
   .section-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
-
   .preview-wrap { position: relative; margin-bottom: 8px; display: none; }
   .preview-wrap img { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid var(--accent); display: block; }
   .preview-clear {
@@ -119,11 +108,8 @@
     border-radius: 50%; width: 24px; height: 24px; cursor: pointer;
     font-size: 0.9rem; display: flex; align-items: center; justify-content: center;
   }
-
   .photo-hint { font-size: 0.58rem; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; display: none; }
-
   .input-row { display: flex; gap: 8px; margin-bottom: 16px; align-items: stretch; }
-
   textarea {
     flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
     color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.78rem;
@@ -131,16 +117,13 @@
   }
   textarea:focus { border-color: var(--accent); }
   textarea::placeholder { color: var(--muted); }
-
   .btn-col { display: flex; flex-direction: column; gap: 6px; }
-
   .photo-btn {
     background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
     color: var(--text); font-size: 1.1rem; width: 44px; height: 32px; cursor: pointer;
     display: flex; align-items: center; justify-content: center; transition: border-color 0.2s;
   }
   .photo-btn:hover, .photo-btn.has-photo { border-color: var(--accent); }
-
   button.log-btn {
     background: var(--accent); color: #0e0e0e; border: none; border-radius: 8px;
     font-family: 'DM Mono', monospace; font-size: 0.65rem; font-weight: 500;
@@ -149,41 +132,58 @@
   }
   button.log-btn:hover { opacity: 0.85; }
   button.log-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
   #photoInput { display: none; }
 
+  /* LOG ENTRIES */
   .log-entry {
     background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
     padding: 10px 12px; display: flex; justify-content: space-between;
     align-items: flex-start; gap: 10px; margin-bottom: 7px; animation: fadeIn 0.3s ease;
   }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
   .entry-name { font-size: 0.75rem; color: var(--text); flex: 1; line-height: 1.4; }
   .entry-note { font-size: 0.6rem; color: var(--muted); margin-top: 2px; }
   .entry-macros { text-align: right; white-space: nowrap; }
   .entry-cal { font-size: 0.8rem; color: var(--accent); font-weight: 500; }
   .entry-pro { font-size: 0.6rem; color: var(--accent2); margin-top: 1px; }
-
   .delete-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; padding: 0 0 0 4px; transition: color 0.2s; }
   .delete-btn:hover { color: var(--danger); }
-
   .empty-state { font-size: 0.7rem; color: var(--muted); text-align: center; padding: 18px; border: 1px dashed var(--border); border-radius: 8px; margin-bottom: 16px; }
 
+  /* AI BUBBLE */
   .ai-bubble {
     background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent);
     border-radius: 8px; padding: 10px 12px; font-size: 0.72rem; line-height: 1.6;
     color: var(--text); margin-bottom: 16px; animation: fadeIn 0.3s ease;
   }
   .ai-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); margin-bottom: 5px; }
-
   .loading { color: var(--muted); font-size: 0.72rem; padding: 10px; text-align: center; animation: pulse 1.2s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 
+  /* LOCK UI */
+  .lock-summary {
+    background: var(--surface); border: 1px solid var(--accent);
+    border-radius: 8px; padding: 12px 14px; margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    animation: fadeIn 0.3s ease;
+  }
+  .lock-summary-label { font-size: 0.55rem; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 3px; }
+  .lock-summary-stats { font-size: 0.72rem; color: var(--text); }
+  .lock-btn {
+    background: none; border: 1px solid var(--accent); color: var(--accent);
+    font-family: 'DM Mono', monospace; font-size: 0.6rem; font-weight: 500;
+    padding: 10px; border-radius: 6px; cursor: pointer;
+    text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s;
+    width: 100%; margin-top: 10px;
+  }
+  .lock-btn:hover { background: rgba(200,240,96,0.08); }
+  .unlock-btn {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    font-family: 'DM Mono', monospace; font-size: 0.58rem;
+    padding: 6px 10px; border-radius: 6px; cursor: pointer;
+    text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; white-space: nowrap;
+  }
+  .unlock-btn:hover { border-color: var(--accent2); color: var(--accent2); }
   .reset-btn {
     background: none; border: 1px solid var(--border); color: var(--muted);
     font-family: 'DM Mono', monospace; font-size: 0.6rem; padding: 6px 12px;
@@ -191,17 +191,15 @@
     transition: all 0.2s; width: 100%; margin-top: 6px;
   }
   .reset-btn:hover { border-color: var(--danger); color: var(--danger); }
-
   .date-label { font-size: 0.6rem; color: var(--muted); text-align: right; margin-bottom: 14px; letter-spacing: 1px; }
 
-  /* WEEK */
+  /* WEEK TAB */
   .week-summary { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 16px; }
   .week-stat-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
   .week-stat-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
   .week-stat-val { font-size: 1rem; font-weight: 500; }
   .deficit-positive { color: var(--accent); }
   .deficit-negative { color: var(--danger); }
-
   .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 16px; }
   .week-day { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 4px; text-align: center; }
   .week-day.today { border-color: var(--accent); }
@@ -214,7 +212,7 @@
   .week-day-fill { height: 100%; background: var(--accent); border-radius: 2px; }
   .week-day-fill.over { background: var(--danger); }
 
-  /* WEIGHT */
+  /* WEIGHT TAB */
   .weight-input-row { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
   .weight-input-row input[type="number"] {
     flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
@@ -229,10 +227,8 @@
     padding: 10px 16px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap;
   }
   .weight-log-btn:hover { opacity: 0.85; }
-
   .chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px; overflow: hidden; }
   .chart-wrap svg { width: 100%; display: block; }
-
   .weight-entry {
     background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
     padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;
@@ -245,7 +241,6 @@
   .weight-entry-delta.up { color: var(--danger); }
   .weight-del-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; padding: 0 0 0 8px; transition: color 0.2s; }
   .weight-del-btn:hover { color: var(--danger); }
-
   .goal-progress-card {
     background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
     padding: 14px; margin-bottom: 12px; display: flex; justify-content: space-between;
@@ -259,7 +254,6 @@
   /* SETTINGS */
   .settings-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
   .settings-card h3 { font-size: 0.65rem; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; }
-
   .field { margin-bottom: 14px; }
   .field:last-child { margin-bottom: 0; }
   .field label { display: block; font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
@@ -270,7 +264,6 @@
   }
   .field input::-webkit-inner-spin-button { -webkit-appearance: none; }
   .field input:focus { border-color: var(--accent); }
-
   .save-btn {
     background: var(--accent); color: #0e0e0e; border: none; border-radius: 8px;
     font-family: 'DM Mono', monospace; font-size: 0.7rem; font-weight: 500;
@@ -278,9 +271,7 @@
     width: 100%; transition: opacity 0.2s; margin-top: 4px;
   }
   .save-btn:hover { opacity: 0.85; }
-
   .save-confirm { font-size: 0.65rem; color: var(--accent); text-align: center; margin-top: 8px; display: none; }
-
   .info-box {
     background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent2);
     border-radius: 8px; padding: 10px 12px; font-size: 0.7rem; line-height: 1.6; color: var(--muted); margin-bottom: 16px;
@@ -306,6 +297,8 @@
 
 <!-- TODAY -->
 <div class="page active" id="page-today">
+  <div class="week-nav" id="weekNav"></div>
+  <div class="day-tabs" id="dayTabs"></div>
   <div class="date-label" id="dateLabel"></div>
   <div class="goals">
     <div class="goal-card">
@@ -330,30 +323,33 @@
     </div>
   </div>
 
-  <div class="section-label">Log food</div>
-  <div class="photo-hint" id="photoHint">&#128247; Photo ready &mdash; add a note or just hit Log</div>
-  <div class="preview-wrap" id="previewWrap">
-    <img id="previewImg" src="" alt="Food photo" />
-    <button class="preview-clear" onclick="clearPhoto()">&#215;</button>
-  </div>
-  <div class="input-row">
-    <textarea id="foodInput" placeholder="Describe what you ate, or snap/upload a photo..."></textarea>
-    <div class="btn-col">
-      <button class="photo-btn" id="photoBtn" onclick="document.getElementById('photoInput').click()" title="Camera or photo library">&#128247;</button>
-      <button class="log-btn" id="logBtn" onclick="logFood()">Log</button>
+  <div id="foodInputSection">
+    <div class="section-label">Log food</div>
+    <div class="photo-hint" id="photoHint">&#128247; Photo ready &mdash; add a note or just hit Log</div>
+    <div class="preview-wrap" id="previewWrap">
+      <img id="previewImg" src="" alt="Food photo" />
+      <button class="preview-clear" onclick="clearPhoto()">&#215;</button>
     </div>
+    <div class="input-row">
+      <textarea id="foodInput" placeholder="Describe what you ate, or snap/upload a photo..."></textarea>
+      <div class="btn-col">
+        <button class="photo-btn" id="photoBtn" onclick="document.getElementById('photoInput').click()" title="Camera or photo library">&#128247;</button>
+        <button class="log-btn" id="logBtn" onclick="logFood()">Log</button>
+      </div>
+    </div>
+    <input type="file" id="photoInput" accept="image/*" onchange="handlePhoto(event)" />
   </div>
-  <input type="file" id="photoInput" accept="image/*" onchange="handlePhoto(event)" />
 
   <div id="aiResponse"></div>
-  <div class="section-label">Today's log</div>
+  <div class="section-label" id="logSectionLabel">Day's log</div>
   <div id="logList"></div>
-  <button class="reset-btn" onclick="resetDay()">&#8634; Reset today's log</button>
+  <div id="dayLockSection"></div>
+  <button class="reset-btn" id="resetBtn" onclick="resetDay()" style="display:none">&#8634; Reset day's log</button>
 </div>
 
 <!-- WEEK -->
 <div class="page" id="page-week">
-  <div class="section-label" style="margin-top:4px">This week</div>
+  <div class="week-nav" id="weekTabNav" style="padding-top:4px"></div>
   <div class="week-summary" id="weekSummary"></div>
   <div class="section-label">Daily breakdown</div>
   <div class="week-grid" id="weekGrid"></div>
@@ -381,11 +377,9 @@
 <!-- SETTINGS -->
 <div class="page" id="page-settings">
   <div class="section-label" style="margin-top:4px">Your profile</div>
-
   <div class="info-box">
     Each person opens this on their own browser &mdash; your settings and logs are stored separately on your device and never shared.
   </div>
-
   <div class="settings-card">
     <h3>Identity</h3>
     <div class="field">
@@ -393,7 +387,6 @@
       <input type="text" id="s-name" placeholder="e.g. Tate" maxlength="20" />
     </div>
   </div>
-
   <div class="settings-card">
     <h3>Daily goals</h3>
     <div class="field">
@@ -409,7 +402,6 @@
       <input type="number" id="s-maint" placeholder="2500" min="1000" max="6000" />
     </div>
   </div>
-
   <div class="settings-card">
     <h3>Weight goal</h3>
     <div class="field">
@@ -421,10 +413,8 @@
       <input type="number" id="s-goal" placeholder="175" step="0.1" min="50" max="600" />
     </div>
   </div>
-
   <button class="save-btn" onclick="saveSettings()">Save settings</button>
   <div class="save-confirm" id="saveConfirm">&#10003; Saved!</div>
-
   <div class="settings-card" style="margin-top:16px">
     <h3>API Key</h3>
     <div class="info-box" style="margin-bottom:12px">
@@ -442,11 +432,10 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v1.2';
+  const APP_VERSION = 'v1.3';
 
   // ---- PWA SETUP ----
   function setupPWA() {
-    // Inject manifest so Safari treats this as a standalone app
     const manifest = {
       name: 'Fuel Log', short_name: 'Fuel Log',
       start_url: '/fuel-log/', display: 'standalone',
@@ -456,24 +445,18 @@
     ml.rel = 'manifest';
     ml.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
     document.head.appendChild(ml);
-
-    // Generate home screen icon via canvas (dark bg + "FL" in accent green)
     try {
       const canvas = document.createElement('canvas');
       canvas.width = 180; canvas.height = 180;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#0e0e0e';
-      ctx.fillRect(0, 0, 180, 180);
-      ctx.fillStyle = '#c8f060';
-      ctx.font = '900 80px Georgia, serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#0e0e0e'; ctx.fillRect(0, 0, 180, 180);
+      ctx.fillStyle = '#c8f060'; ctx.font = '900 80px Georgia, serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText('FL', 90, 95);
       const il = document.createElement('link');
-      il.rel = 'apple-touch-icon';
-      il.href = canvas.toDataURL('image/png');
+      il.rel = 'apple-touch-icon'; il.href = canvas.toDataURL('image/png');
       document.head.appendChild(il);
-    } catch(e) { /* canvas unavailable — icon falls back to Safari default */ }
+    } catch(e) {}
   }
 
   // ---- SETTINGS ----
@@ -498,12 +481,10 @@
   function defaultSettings() {
     return { name: '', calGoal: 2000, proGoal: 160, maintenance: 2500, startWeight: 186, goalWeight: 175 };
   }
-
   function loadSettings() {
     try { return Object.assign(defaultSettings(), JSON.parse(localStorage.getItem('fuelSettings') || '{}')); }
     catch { return defaultSettings(); }
   }
-
   function saveSettings() {
     const s = {
       name: document.getElementById('s-name').value.trim(),
@@ -515,25 +496,19 @@
     };
     localStorage.setItem('fuelSettings', JSON.stringify(s));
     applySettings(s);
-    const confirm = document.getElementById('saveConfirm');
-    confirm.style.display = 'block';
-    setTimeout(() => confirm.style.display = 'none', 2000);
+    const c = document.getElementById('saveConfirm');
+    c.style.display = 'block';
+    setTimeout(() => c.style.display = 'none', 2000);
   }
-
   function applySettings(s) {
-    // Header
     const name = s.name ? s.name + "'s " : '';
     document.getElementById('headerSubtitle').textContent =
       (s.startWeight + ' → ' + s.goalWeight + ' lbs • ' + s.calGoal.toLocaleString() + ' cal • ' + s.proGoal + 'g protein').toUpperCase();
     document.title = name ? name + 'Fuel Log' : 'Fuel Log';
-
-    // Today targets
     document.getElementById('calTarget').textContent = s.calGoal.toLocaleString();
     document.getElementById('proTarget').textContent = s.proGoal + 'g';
-
-    updateTodayUI();
+    updateDayUI();
   }
-
   function populateSettingsForm(s) {
     const hasKey = !!getApiKey();
     const statusEl = document.getElementById('apiKeyStatus');
@@ -552,10 +527,10 @@
   // ---- CORE ----
   function today() { return new Date().toISOString().split('T')[0]; }
 
-  function getWeekDates() {
+  function getWeekDatesForOffset(offset) {
     const dates = [], now = new Date();
     const monday = new Date(now);
-    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7) + (offset * 7));
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
@@ -564,13 +539,100 @@
     return dates;
   }
 
+  function getWeekDates() { return getWeekDatesForOffset(0); }
+
   function loadLog(date) { return JSON.parse(localStorage.getItem('fuelLog_' + date) || '[]'); }
   function saveLog(date, log) { localStorage.setItem('fuelLog_' + date, JSON.stringify(log)); }
   function loadWeights() { return JSON.parse(localStorage.getItem('weightLog') || '[]'); }
   function saveWeights(w) { localStorage.setItem('weightLog', JSON.stringify(w)); }
+  function isDayLocked(date) { return localStorage.getItem('fuelDayLocked_' + date) === 'true'; }
+  function formatDateNice(dateStr) {
+    return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  }
+  function formatDateShort(dateStr) {
+    return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
 
-  let todayLog = loadLog(today());
+  // ---- DAY NAV STATE ----
+  let selectedDate = today();
+  let currentWeekOffset = 0;
+  let weekTabOffset = 0;
+  let currentDayLog = loadLog(selectedDate);
   let pendingImageData = null, pendingMediaType = null;
+
+  function renderDayNav() {
+    const dates = getWeekDatesForOffset(currentWeekOffset);
+    const todayStr = today();
+    const dayNames = ['M','T','W','T','F','S','S'];
+
+    // Week nav label
+    const first = new Date(dates[0] + 'T12:00:00');
+    const last = new Date(dates[6] + 'T12:00:00');
+    const weekLabel = currentWeekOffset === 0 ? 'This Week'
+      : formatDateShort(dates[0]) + ' – ' + formatDateShort(dates[6]);
+
+    document.getElementById('weekNav').innerHTML = `
+      <button class="week-nav-btn" onclick="changeWeek(-1)">&#8249;</button>
+      <span class="week-nav-label">${weekLabel}</span>
+      <button class="week-nav-btn" onclick="changeWeek(1)" ${currentWeekOffset >= 0 ? 'disabled' : ''}>&#8250;</button>`;
+
+    // Day tabs
+    document.getElementById('dayTabs').innerHTML = dates.map((date, i) => {
+      const isFuture = date > todayStr;
+      const isToday = date === todayStr;
+      const locked = isDayLocked(date);
+      const hasData = loadLog(date).length > 0;
+      const isSelected = date === selectedDate;
+      let cls = 'day-tab';
+      if (isSelected) cls += ' active';
+      if (isToday) cls += ' is-today';
+      if (locked) cls += ' locked';
+      else if (hasData) cls += ' has-data';
+      const dot = locked ? '✓' : (hasData ? '●' : '');
+      return `<button class="${cls}" onclick="selectDay('${date}')" ${isFuture ? 'disabled' : ''}>
+        <span class="day-tab-name">${dayNames[i]}</span>
+        <span class="day-tab-dot">${dot}</span>
+      </button>`;
+    }).join('');
+  }
+
+  function changeWeek(dir) {
+    const newOffset = currentWeekOffset + dir;
+    if (newOffset > 0) return;
+    currentWeekOffset = newOffset;
+    const newDates = getWeekDatesForOffset(currentWeekOffset);
+    if (!newDates.includes(selectedDate)) {
+      const todayStr = today();
+      selectedDate = newDates.includes(todayStr) ? todayStr : newDates[0];
+      currentDayLog = loadLog(selectedDate);
+      document.getElementById('aiResponse').innerHTML = '';
+    }
+    renderDayNav();
+    updateDayUI();
+  }
+
+  function selectDay(date) {
+    if (date > today()) return;
+    selectedDate = date;
+    currentDayLog = loadLog(date);
+    document.getElementById('aiResponse').innerHTML = '';
+    clearPhoto();
+    renderDayNav();
+    updateDayUI();
+  }
+
+  function lockDay(date) {
+    if (!confirm('Lock ' + formatDateNice(date) + '?\nYou can unlock it later to make changes.')) return;
+    localStorage.setItem('fuelDayLocked_' + date, 'true');
+    renderDayNav();
+    updateDayUI();
+  }
+
+  function unlockDay(date) {
+    localStorage.removeItem('fuelDayLocked_' + date);
+    renderDayNav();
+    updateDayUI();
+  }
 
   // ---- TABS ----
   function switchTab(tab) {
@@ -579,57 +641,101 @@
     });
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + tab).classList.add('active');
+    if (tab === 'today') { renderDayNav(); updateDayUI(); }
     if (tab === 'week') renderWeek();
     if (tab === 'weight') renderWeight();
     if (tab === 'settings') populateSettingsForm(loadSettings());
   }
 
-  // ---- TODAY ----
-  function updateTodayUI() {
+  // ---- DAY UI ----
+  function updateDayUI() {
     const s = loadSettings();
-    const totalCal = todayLog.reduce((a, e) => a + e.calories, 0);
-    const totalPro = todayLog.reduce((a, e) => a + e.protein_g, 0);
+    const log = currentDayLog;
+    const totalCal = log.reduce((a, e) => a + e.calories, 0);
+    const totalPro = log.reduce((a, e) => a + e.protein_g, 0);
+    const locked = isDayLocked(selectedDate);
+    const isToday = selectedDate === today();
+    const isFuture = selectedDate > today();
 
+    // Date label
+    document.getElementById('dateLabel').textContent = formatDateNice(selectedDate);
+
+    // Goals
     document.getElementById('calCurrent').textContent = totalCal.toLocaleString();
     document.getElementById('proCurrent').textContent = totalPro + 'g';
-
     const calBar = document.getElementById('calBar');
     calBar.style.width = Math.min((totalCal / s.calGoal) * 100, 100) + '%';
     calBar.className = 'progress-fill cal-fill' + (totalCal > s.calGoal ? ' over' : '');
     document.getElementById('proBar').style.width = Math.min((totalPro / s.proGoal) * 100, 100) + '%';
-
     const calLeft = s.calGoal - totalCal, proLeft = s.proGoal - totalPro;
     document.getElementById('calRemaining').textContent =
       calLeft >= 0 ? calLeft.toLocaleString() + ' remaining' : Math.abs(calLeft).toLocaleString() + ' over goal';
     document.getElementById('proRemaining').textContent =
       proLeft >= 0 ? proLeft + 'g remaining' : Math.abs(proLeft) + 'g over goal';
 
+    // Food input: hide for locked or future days
+    document.getElementById('foodInputSection').style.display = (locked || isFuture) ? 'none' : 'block';
+
+    // Log list
     const listEl = document.getElementById('logList');
-    listEl.innerHTML = todayLog.length === 0
-      ? '<div class="empty-state">Nothing logged yet today.</div>'
-      : todayLog.map((e, i) => `
-          <div class="log-entry">
-            <div style="flex:1">
-              <div class="entry-name">${e.name}</div>
-              ${e.note ? `<div class="entry-note">${e.note}</div>` : ''}
-            </div>
-            <div class="entry-macros">
-              <div class="entry-cal">${e.calories} cal</div>
-              <div class="entry-pro">${e.protein_g}g protein</div>
-            </div>
-            <button class="delete-btn" onclick="deleteEntry(${i})">&#215;</button>
-          </div>`).join('');
+    if (isFuture || log.length === 0) {
+      listEl.innerHTML = '<div class="empty-state">' + (isFuture ? 'Future day.' : (isToday ? 'Nothing logged yet today.' : 'Nothing logged this day.')) + '</div>';
+    } else {
+      listEl.innerHTML = log.map((e, i) => `
+        <div class="log-entry">
+          <div style="flex:1">
+            <div class="entry-name">${e.name}</div>
+            ${e.note ? `<div class="entry-note">${e.note}</div>` : ''}
+          </div>
+          <div class="entry-macros">
+            <div class="entry-cal">${e.calories} cal</div>
+            <div class="entry-pro">${e.protein_g}g protein</div>
+          </div>
+          ${!locked ? `<button class="delete-btn" onclick="deleteEntry(${i})">&#215;</button>` : ''}
+        </div>`).join('');
+    }
+
+    // Lock / unlock section
+    const lockSection = document.getElementById('dayLockSection');
+    if (locked) {
+      lockSection.innerHTML = `
+        <div class="lock-summary">
+          <div>
+            <div class="lock-summary-label">✓ Day locked</div>
+            <div class="lock-summary-stats">${totalCal.toLocaleString()} cal &middot; ${totalPro}g protein</div>
+          </div>
+          <button class="unlock-btn" onclick="unlockDay('${selectedDate}')">Unlock</button>
+        </div>`;
+    } else if (!isFuture && log.length > 0) {
+      lockSection.innerHTML = `<button class="lock-btn" onclick="lockDay('${selectedDate}')">&#128274; Lock in Day</button>`;
+    } else {
+      lockSection.innerHTML = '';
+    }
+
+    // Reset button: only when not locked, not future, has data
+    document.getElementById('resetBtn').style.display =
+      (!locked && !isFuture && log.length > 0) ? 'block' : 'none';
   }
 
-  function deleteEntry(i) { todayLog.splice(i, 1); saveLog(today(), todayLog); updateTodayUI(); }
+  function deleteEntry(i) {
+    currentDayLog.splice(i, 1);
+    saveLog(selectedDate, currentDayLog);
+    updateDayUI();
+    renderDayNav();
+  }
 
   function resetDay() {
-    if (confirm('Clear today\'s entire log?')) {
-      todayLog = []; saveLog(today(), todayLog); updateTodayUI();
-      clearPhoto(); document.getElementById('aiResponse').innerHTML = '';
+    if (confirm('Clear the entire log for ' + formatDateNice(selectedDate) + '?')) {
+      currentDayLog = [];
+      saveLog(selectedDate, currentDayLog);
+      updateDayUI();
+      renderDayNav();
+      clearPhoto();
+      document.getElementById('aiResponse').innerHTML = '';
     }
   }
 
+  // ---- PHOTO ----
   function compressImage(dataURL, callback) {
     const img = new Image();
     img.onload = () => {
@@ -657,10 +763,8 @@
       document.getElementById('previewWrap').style.display = 'block';
       document.getElementById('photoHint').style.display = 'block';
       document.getElementById('photoBtn').classList.add('has-photo');
-      // Compress before storing — keeps payload small enough for iPhone Safari
       compressImage(originalDataURL, (b64, mediaType) => {
-        pendingImageData = b64;
-        pendingMediaType = mediaType;
+        pendingImageData = b64; pendingMediaType = mediaType;
       });
     };
     reader.readAsDataURL(file);
@@ -675,13 +779,13 @@
     document.getElementById('previewImg').src = '';
   }
 
+  // ---- LOG FOOD ----
   async function logFood() {
     const s = loadSettings();
     const input = document.getElementById('foodInput');
     const btn = document.getElementById('logBtn');
     const text = input.value.trim();
     if (!text && !pendingImageData) return;
-
     if (!getApiKey()) {
       document.getElementById('aiResponse').innerHTML = '<div class="ai-bubble" style="border-left-color:var(--danger)"><div class="ai-label" style="color:var(--danger)">Setup needed</div>Go to Settings and enter your Anthropic API key first.</div>';
       return;
@@ -693,7 +797,6 @@
 - Calories: ${s.calGoal} cal/day
 - Protein: ${s.proGoal}g/day
 - Maintenance: ~${s.maintenance} cal/day
-
 Respond with JSON ONLY. No markdown, no backticks.
 Format: {"items":[{"name":"Food name","calories":number,"protein_g":number,"note":"brief note"}],"response":"1-2 sentence comment. If photo, note it's a visual estimate. Flag low protein foods."}
 For images: identify foods, estimate portions from plate/context, estimate macros. Keep response short and direct.`;
@@ -711,23 +814,21 @@ For images: identify foods, estimate portions from plate/context, estimate macro
         headers: { 'Content-Type': 'application/json', 'x-api-key': getApiKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
         body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: systemPrompt, messages: [{ role: 'user', content: userContent }] })
       });
-
       const data = await res.json();
       if (!res.ok) {
         const errMsg = (data.error && data.error.message) ? data.error.message : ('API error ' + res.status);
         document.getElementById('aiResponse').innerHTML = '<div class="ai-bubble"><div class="ai-label">Error</div>' + errMsg + '</div>';
-        btn.disabled = false;
-        return;
+        btn.disabled = false; return;
       }
       const rawText = data.content.map(b => b.text || '').join('');
       let parsed;
       try { parsed = JSON.parse(rawText); }
       catch { const m = rawText.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : null; }
-
       if (parsed && parsed.items) {
-        parsed.items.forEach(item => todayLog.push({ name: item.name, calories: item.calories, protein_g: item.protein_g, note: item.note || '' }));
-        saveLog(today(), todayLog);
-        updateTodayUI();
+        parsed.items.forEach(item => currentDayLog.push({ name: item.name, calories: item.calories, protein_g: item.protein_g, note: item.note || '' }));
+        saveLog(selectedDate, currentDayLog);
+        updateDayUI();
+        renderDayNav();
         input.value = ''; clearPhoto();
         document.getElementById('aiResponse').innerHTML = `<div class="ai-bubble"><div class="ai-label">Claude</div>${parsed.response || ''}</div>`;
       } else {
@@ -743,14 +844,28 @@ For images: identify foods, estimate portions from plate/context, estimate macro
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); logFood(); }
   });
 
-  // ---- WEEK ----
+  // ---- WEEK TAB ----
+  function changeWeekTab(dir) {
+    const newOffset = weekTabOffset + dir;
+    if (newOffset > 0) return;
+    weekTabOffset = newOffset;
+    renderWeek();
+  }
+
   function renderWeek() {
     const s = loadSettings();
-    const dates = getWeekDates();
+    const dates = getWeekDatesForOffset(weekTabOffset);
+
+    // Week nav
+    const weekLabel = weekTabOffset === 0 ? 'This Week'
+      : formatDateShort(dates[0]) + ' – ' + formatDateShort(dates[6]);
+    document.getElementById('weekTabNav').innerHTML = `
+      <button class="week-nav-btn" onclick="changeWeekTab(-1)">&#8249;</button>
+      <span class="week-nav-label">${weekLabel}</span>
+      <button class="week-nav-btn" onclick="changeWeekTab(1)" ${weekTabOffset >= 0 ? 'disabled' : ''}>&#8250;</button>`;
     const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
     const todayStr = today();
     let totalCal = 0, totalDays = 0, totalDeficit = 0;
-
     const gridHTML = dates.map((date, i) => {
       const log = loadLog(date);
       const cal = log.reduce((a, e) => a + e.calories, 0);
@@ -766,18 +881,15 @@ For images: identify foods, estimate portions from plate/context, estimate macro
         <div class="week-day-bar"><div class="week-day-fill${cal > s.calGoal ? ' over' : ''}" style="width:${pct}%"></div></div>
       </div>`;
     }).join('');
-
     document.getElementById('weekGrid').innerHTML = gridHTML;
     const avgCal = totalDays > 0 ? Math.round(totalCal / totalDays) : 0;
     const lbsLost = (totalDeficit / 3500).toFixed(2);
     const deficitClass = totalDeficit >= 0 ? 'deficit-positive' : 'deficit-negative';
-
     const dailyDeficit = s.maintenance - s.calGoal;
     const explainer = document.getElementById('deficitExplainerText');
     if (explainer) {
       explainer.textContent = `Your maintenance is ~${s.maintenance.toLocaleString()} cal/day. Eating at your ${s.calGoal.toLocaleString()} cal goal creates a ${dailyDeficit > 0 ? dailyDeficit.toLocaleString() + ' cal daily deficit' : 'daily surplus of ' + Math.abs(dailyDeficit).toLocaleString() + ' cal'}. Over 7 days, 3,500 cal deficit = ~1 lb of fat. The weekly total above shows your actual progress based on what you've logged.`;
     }
-
     document.getElementById('weekSummary').innerHTML = `
       <div class="week-stat-row">
         <span class="week-stat-label">Weekly deficit</span>
@@ -798,7 +910,6 @@ For images: identify foods, estimate portions from plate/context, estimate macro
 
   // ---- WEIGHT ----
   function logWeight() {
-    const s = loadSettings();
     const input = document.getElementById('weightInput');
     const val = parseFloat(input.value);
     if (isNaN(val) || val < 50 || val > 600) return;
@@ -808,9 +919,7 @@ For images: identify foods, estimate portions from plate/context, estimate macro
     if (existing >= 0) weights[existing].weight = val;
     else weights.push({ date: todayStr, weight: val });
     weights.sort((a, b) => a.date.localeCompare(b.date));
-    saveWeights(weights);
-    input.value = '';
-    renderWeight();
+    saveWeights(weights); input.value = ''; renderWeight();
   }
 
   function deleteWeight(i) { const w = loadWeights(); w.splice(i, 1); saveWeights(w); renderWeight(); }
@@ -823,7 +932,6 @@ For images: identify foods, estimate portions from plate/context, estimate macro
     const remaining = latest - s.goalWeight;
     const range = s.startWeight - s.goalWeight;
     const pct = range > 0 ? Math.min(Math.max((lost / range) * 100, 0), 100) : 0;
-
     document.getElementById('goalProgressCard').innerHTML = `
       <div class="goal-progress-card">
         <div>
@@ -847,9 +955,7 @@ For images: identify foods, estimate portions from plate/context, estimate macro
       <div class="progress-bar" style="margin-bottom:16px">
         <div class="progress-fill" style="width:${pct}%;background:var(--accent3)"></div>
       </div>`;
-
     renderChart(weights, s);
-
     const listEl = document.getElementById('weightList');
     if (weights.length === 0) { listEl.innerHTML = '<div class="empty-state">No weight entries yet.</div>'; return; }
     const reversed = [...weights].reverse();
@@ -909,33 +1015,23 @@ For images: identify foods, estimate portions from plate/context, estimate macro
 
   // ---- UPDATE ----
   function updateApp() {
-    // Save key to sessionStorage so it survives the reload
     const key = getApiKey();
     if (key) sessionStorage.setItem('fuelApiKeyTemp', key);
     window.location.href = window.location.pathname + '?v=' + Date.now();
   }
-
-  // On load: if we came from an update, restore key and clean URL
   (function() {
     const temp = sessionStorage.getItem('fuelApiKeyTemp');
-    if (temp) {
-      localStorage.setItem('fuelApiKey', temp);
-      sessionStorage.removeItem('fuelApiKeyTemp');
-    }
-    // Clean the ?v= param from URL without reloading
-    if (window.location.search.startsWith('?v=')) {
-      history.replaceState(null, '', window.location.pathname);
-    }
+    if (temp) { localStorage.setItem('fuelApiKey', temp); sessionStorage.removeItem('fuelApiKeyTemp'); }
+    if (window.location.search.startsWith('?v=')) history.replaceState(null, '', window.location.pathname);
   })();
 
   // ---- INIT ----
   setupPWA();
   document.getElementById('versionBadge').textContent = APP_VERSION;
-  document.getElementById('dateLabel').textContent =
-    new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-
   const initSettings = loadSettings();
   applySettings(initSettings);
+  renderDayNav();
+  updateDayUI();
 </script>
 </body>
 </html>
