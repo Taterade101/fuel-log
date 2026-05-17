@@ -101,14 +101,17 @@
 
   /* LOG INPUT */
   .section-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
-  .preview-wrap { position: relative; margin-bottom: 8px; display: none; }
-  .preview-wrap img { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid var(--accent); display: block; }
-  .preview-clear {
-    position: absolute; top: 6px; right: 6px;
-    background: rgba(0,0,0,0.75); border: none; color: var(--text);
-    border-radius: 50%; width: 24px; height: 24px; cursor: pointer;
-    font-size: 0.9rem; display: flex; align-items: center; justify-content: center;
+  .photo-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .photo-thumb { position: relative; width: 72px; height: 72px; flex-shrink: 0; }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 1px solid var(--accent); display: block; }
+  .photo-thumb-clear {
+    position: absolute; top: -6px; right: -6px;
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    border-radius: 50%; width: 20px; height: 20px; cursor: pointer;
+    font-size: 0.8rem; display: flex; align-items: center; justify-content: center;
+    line-height: 1;
   }
+  .photo-thumb-clear:hover { border-color: var(--danger); color: var(--danger); }
   .photo-hint { font-size: 0.58rem; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; display: none; }
   .input-row { display: flex; gap: 8px; margin-bottom: 16px; align-items: stretch; }
   textarea {
@@ -274,7 +277,7 @@
   .save-btn:hover { opacity: 0.85; }
   .save-confirm { font-size: 0.65rem; color: var(--accent); text-align: center; margin-top: 8px; display: none; }
   .toast {
-    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
     background: var(--surface); border: 1px solid var(--accent); color: var(--accent);
     font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 1px;
     text-transform: uppercase; padding: 10px 16px; border-radius: 8px;
@@ -336,11 +339,8 @@
 
   <div id="foodInputSection">
     <div class="section-label">Log food</div>
-    <div class="photo-hint" id="photoHint">&#128247; Photo ready &mdash; add a note or just hit Log</div>
-    <div class="preview-wrap" id="previewWrap">
-      <img id="previewImg" src="" alt="Food photo" />
-      <button class="preview-clear" onclick="clearPhoto()">&#215;</button>
-    </div>
+    <div class="photo-hint" id="photoHint" style="display:none"></div>
+    <div class="photo-grid" id="photoGrid" style="display:none"></div>
     <div class="input-row">
       <textarea id="foodInput" placeholder="Describe what you ate, or snap/upload a photo..."></textarea>
       <div class="btn-col">
@@ -348,7 +348,7 @@
         <button class="log-btn" id="logBtn" onclick="logFood()">Log</button>
       </div>
     </div>
-    <input type="file" id="photoInput" accept="image/*" onchange="handlePhoto(event)" />
+    <input type="file" id="photoInput" accept="image/*" multiple onchange="handlePhoto(event)" />
   </div>
 
   <div id="aiResponse"></div>
@@ -578,7 +578,7 @@
   let currentWeekOffset = 0;
   let weekTabOffset = 0;
   let currentDayLog = loadLog(selectedDate);
-  let pendingImageData = null, pendingMediaType = null;
+  let pendingImages = []; // array of { data, mediaType, previewURL }
 
   function renderDayNav() {
     const dates = getWeekDatesForOffset(currentWeekOffset);
@@ -779,29 +779,60 @@
     img.src = dataURL;
   }
 
+  function renderPhotoGrid() {
+    const grid = document.getElementById('photoGrid');
+    const hint = document.getElementById('photoHint');
+    const btn = document.getElementById('photoBtn');
+    if (pendingImages.length === 0) {
+      grid.style.display = 'none';
+      hint.style.display = 'none';
+      btn.classList.remove('has-photo');
+      return;
+    }
+    grid.style.display = 'flex';
+    hint.style.display = 'block';
+    hint.textContent = pendingImages.length === 1
+      ? '📷 1 photo ready — add a note or just hit Log'
+      : '📷 ' + pendingImages.length + ' photos ready — add a note or just hit Log';
+    btn.classList.add('has-photo');
+    grid.innerHTML = pendingImages.map((img, i) =>
+      `<div class="photo-thumb">
+        <img src="${img.previewURL}" alt="Photo ${i+1}" />
+        <button class="photo-thumb-clear" onclick="clearSinglePhoto(${i})">&#215;</button>
+      </div>`
+    ).join('');
+  }
+
   function handlePhoto(event) {
-    const file = event.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      const originalDataURL = e.target.result;
-      document.getElementById('previewImg').src = originalDataURL;
-      document.getElementById('previewWrap').style.display = 'block';
-      document.getElementById('photoHint').style.display = 'block';
-      document.getElementById('photoBtn').classList.add('has-photo');
-      compressImage(originalDataURL, (b64, mediaType) => {
-        pendingImageData = b64; pendingMediaType = mediaType;
-      });
-    };
-    reader.readAsDataURL(file);
+    const files = Array.from(event.target.files);
+    if (!files.length) return;
+    const MAX_PHOTOS = 5;
+    const remaining = MAX_PHOTOS - pendingImages.length;
+    if (remaining <= 0) { showToast('Max 5 photos per log'); event.target.value = ''; return; }
+    const toAdd = files.slice(0, remaining);
+    if (files.length > remaining) showToast('Max 5 photos — added ' + remaining);
+    toAdd.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const previewURL = e.target.result;
+        compressImage(previewURL, (data, mediaType) => {
+          pendingImages.push({ data, mediaType, previewURL });
+          renderPhotoGrid();
+        });
+      };
+      reader.readAsDataURL(file);
+    });
     event.target.value = '';
   }
 
+  function clearSinglePhoto(i) {
+    pendingImages.splice(i, 1);
+    renderPhotoGrid();
+  }
+
   function clearPhoto() {
-    pendingImageData = null; pendingMediaType = null;
-    document.getElementById('previewWrap').style.display = 'none';
-    document.getElementById('photoHint').style.display = 'none';
-    document.getElementById('photoBtn').classList.remove('has-photo');
-    document.getElementById('previewImg').src = '';
+    pendingImages = [];
+    renderPhotoGrid();
   }
 
   // ---- LOG FOOD ----
@@ -810,13 +841,13 @@
     const input = document.getElementById('foodInput');
     const btn = document.getElementById('logBtn');
     const text = input.value.trim();
-    if (!text && !pendingImageData) return;
+    if (!text && pendingImages.length === 0) return;
     if (!getApiKey()) {
       document.getElementById('aiResponse').innerHTML = '<div class="ai-bubble" style="border-left-color:var(--danger)"><div class="ai-label" style="color:var(--danger)">Setup needed</div>Go to Settings and enter your Anthropic API key first.</div>';
       return;
     }
     btn.disabled = true;
-    document.getElementById('aiResponse').innerHTML = '<div class="loading">Analyzing' + (pendingImageData ? ' photo' : '') + '...</div>';
+    document.getElementById('aiResponse').innerHTML = '<div class="loading">Analyzing' + (pendingImages.length > 0 ? (pendingImages.length > 1 ? ' ' + pendingImages.length + ' photos' : ' photo') : '') + '...</div>';
 
     const systemPrompt = `You are a nutrition assistant. This person's daily goals:
 - Calories: ${s.calGoal} cal/day
@@ -826,10 +857,10 @@ Respond with JSON ONLY. No markdown, no backticks.
 Format: {"items":[{"name":"Food name","calories":number,"protein_g":number,"note":"brief note"}],"response":"1-2 sentence comment. If photo, note it's a visual estimate. Flag low protein foods."}
 For images: identify foods, estimate portions from plate/context, estimate macros. Keep response short and direct.`;
 
-    const userContent = pendingImageData
+    const userContent = pendingImages.length > 0
       ? [
-          { type: 'image', source: { type: 'base64', media_type: pendingMediaType, data: pendingImageData } },
-          { type: 'text', text: text || 'What did I eat? Estimate calories and protein.' }
+          ...pendingImages.map(img => ({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } })),
+          { type: 'text', text: text || 'What did I eat? Estimate calories and protein for everything shown.' }
         ]
       : text;
 
