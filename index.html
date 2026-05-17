@@ -39,7 +39,7 @@
     color: var(--text);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     min-height: 100vh;
-    padding-bottom: 80px;
+    padding-bottom: 80px; /* tab bar clearance for all pages */
     -webkit-font-smoothing: antialiased;
   }
 
@@ -87,6 +87,7 @@
   /* ── PAGES ── */
   .page { display: none; padding: 12px 20px 16px; }
   .page.active { display: block; }
+  #page-today { padding-bottom: 200px; } /* extra clearance for fixed input section */
 
   /* ── SECTION LABEL ── */
   .section-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 10px; }
@@ -192,6 +193,15 @@
   }
   .mpill.sel { background: var(--accent-dim); border-color: rgba(52,211,153,0.25); color: var(--accent); }
 
+  /* ── FOOD INPUT (fixed bottom) ── */
+  #foodInputSection {
+    position: fixed;
+    bottom: calc(53px + env(safe-area-inset-bottom));
+    left: 0; right: 0; z-index: 45;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding: 10px 20px 8px;
+  }
   /* ── PHOTO INPUT ── */
   .photo-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .photo-thumb { position: relative; width: 68px; height: 68px; flex-shrink: 0; }
@@ -204,7 +214,7 @@
   }
   .photo-thumb-clear:hover { color: var(--danger); }
   .photo-hint { font-size: 12px; color: var(--accent2); margin-bottom: 8px; font-weight: 500; display: none; }
-  .input-row { display: flex; gap: 8px; align-items: flex-end; }
+  .input-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 8px; }
   textarea {
     flex: 1; background: var(--surface); border: 1.5px solid var(--border);
     border-radius: var(--r); color: var(--text); font-family: 'Inter', sans-serif;
@@ -213,20 +223,20 @@
   }
   textarea:focus { border-color: rgba(52,211,153,0.35); }
   textarea::placeholder { color: var(--muted); }
-  .input-btns { display: flex; flex-direction: column; gap: 6px; }
   .photo-btn {
     background: var(--surface); border: 1.5px solid var(--border);
     border-radius: var(--r-sm); color: var(--muted); font-size: 18px;
-    width: 46px; height: 34px; cursor: pointer;
+    width: 46px; height: 46px; cursor: pointer;
     display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    flex-shrink: 0;
   }
   .photo-btn:hover, .photo-btn.has-photo { border-color: var(--accent2); }
   .photo-btn i { font-size: 20px; }
   .log-btn {
     background: var(--accent); color: #0C0C0E; border: none;
-    border-radius: var(--r-sm); font-family: 'Inter', sans-serif;
-    font-size: 12px; font-weight: 700; padding: 0 12px;
-    cursor: pointer; flex: 1; transition: opacity 0.2s;
+    border-radius: var(--r); font-family: 'Inter', sans-serif;
+    font-size: 15px; font-weight: 700; padding: 13px;
+    cursor: pointer; width: 100%; transition: opacity 0.2s;
   }
   .log-btn:hover { opacity: 0.87; }
   .log-btn:disabled { opacity: 0.35; cursor: not-allowed; }
@@ -550,13 +560,11 @@
     <div class="photo-grid" id="photoGrid" style="display:none"></div>
     <div class="input-row">
       <textarea id="foodInput" placeholder="Describe what you ate, or snap a photo…"></textarea>
-      <div class="input-btns">
-        <button class="photo-btn" id="photoBtn" onclick="document.getElementById('photoInput').click()" title="Camera or photo library">
-          <i class="ti ti-camera" aria-hidden="true"></i>
-        </button>
-        <button class="log-btn" id="logBtn" onclick="logFood()">Log</button>
-      </div>
+      <button class="photo-btn" id="photoBtn" onclick="document.getElementById('photoInput').click()" title="Camera or photo library">
+        <i class="ti ti-camera" aria-hidden="true"></i>
+      </button>
     </div>
+    <button class="log-btn" id="logBtn" onclick="logFood()">Log</button>
     <input type="file" id="photoInput" accept="image/*" multiple onchange="handlePhoto(event)" style="display:none" />
   </div>
 
@@ -958,7 +966,7 @@
           <button class="unlock-btn" onclick="unlockDay('${selectedDate}')">Unlock</button>
         </div>`;
     } else if (!isFuture && log.length > 0) {
-      lockSection.innerHTML = `<button class="lock-btn" onclick="lockDay('${selectedDate}')">🔒 Lock in Day</button>`;
+      lockSection.innerHTML = `<button class="lock-btn" onclick="lockDay('${selectedDate}')"><i class="ti ti-lock" style="font-size:16px;vertical-align:-2px;margin-right:7px" aria-hidden="true"></i>Lock in Day</button>`;
     } else {
       lockSection.innerHTML = '';
     }
