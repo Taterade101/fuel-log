@@ -82,6 +82,7 @@
   .day-tab-dot { font-size: 0.55rem; display: block; height: 12px; line-height: 12px; }
   .day-tab.locked .day-tab-dot { color: var(--accent); }
   .day-tab.has-data:not(.locked) .day-tab-dot { color: var(--accent3); }
+  .day-tab.unlocked-past .day-tab-dot { color: var(--danger); }
 
   /* GOALS */
   .goals { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
@@ -592,12 +593,15 @@
       const locked = isDayLocked(date);
       const hasData = loadLog(date).length > 0;
       const isSelected = date === selectedDate;
+      const isPast = !isToday && !isFuture;
+      const unlocked_past = isPast && hasData && !locked;
       let cls = 'day-tab';
       if (isSelected) cls += ' active';
       if (isToday) cls += ' is-today';
       if (locked) cls += ' locked';
+      else if (unlocked_past) cls += ' unlocked-past';
       else if (hasData) cls += ' has-data';
-      const dot = locked ? '✓' : (hasData ? '●' : '');
+      const dot = locked ? '✓' : (unlocked_past ? '⚠' : (hasData ? '●' : ''));
       return `<button class="${cls}" onclick="selectDay('${date}')" ${isFuture ? 'disabled' : ''}>
         <span class="day-tab-name">${dayNames[i]}</span>
         <span class="day-tab-dot">${dot}</span>
