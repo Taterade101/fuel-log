@@ -273,6 +273,15 @@
   }
   .save-btn:hover { opacity: 0.85; }
   .save-confirm { font-size: 0.65rem; color: var(--accent); text-align: center; margin-top: 8px; display: none; }
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: var(--surface); border: 1px solid var(--accent); color: var(--accent);
+    font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 1px;
+    text-transform: uppercase; padding: 10px 16px; border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+    white-space: nowrap; z-index: 100;
+  }
+  .toast.show { opacity: 1; }
   .info-box {
     background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent2);
     border-radius: 8px; padding: 10px 12px; font-size: 0.7rem; line-height: 1.6; color: var(--muted); margin-bottom: 16px;
@@ -281,6 +290,7 @@
 </head>
 <body>
 
+<div class="toast" id="toast"></div>
 <header>
   <h1>FUEL LOG <span id="versionBadge" style="font-family:'DM Mono',monospace;font-size:0.5rem;font-weight:400;color:var(--muted);letter-spacing:2px;vertical-align:middle;position:relative;top:-5px"></span></h1>
   <div class="subtitle" id="headerSubtitle">Loading...</div>
@@ -1077,7 +1087,24 @@ For images: identify foods, estimate portions from plate/context, estimate macro
   }
 
   // ---- UPDATE ----
-  function updateApp() {
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  async function updateApp() {
+    try {
+      const res = await fetch(window.location.pathname + '?_=' + Date.now());
+      const html = await res.text();
+      const match = html.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
+      const latest = match ? match[1] : null;
+      if (latest && latest === APP_VERSION) {
+        showToast('Already on ' + APP_VERSION + ' — up to date');
+        return;
+      }
+    } catch(e) { /* fetch failed, reload anyway */ }
     const key = getApiKey();
     if (key) sessionStorage.setItem('fuelApiKeyTemp', key);
     window.location.href = window.location.pathname + '?v=' + Date.now();
