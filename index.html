@@ -413,6 +413,15 @@
       <input type="number" id="s-goal" placeholder="175" step="0.1" min="50" max="600" />
     </div>
   </div>
+  <div class="settings-card" style="margin-top:0">
+    <h3>Data</h3>
+    <div class="info-box" style="margin-bottom:12px">
+      Locking a day auto-downloads a backup to your Files app. You can also export manually anytime, or wipe all data from this device below.
+    </div>
+    <button class="save-btn" onclick="exportData()" style="background:var(--surface);border:1px solid var(--accent);color:var(--accent);margin-bottom:10px">Export all data</button>
+    <button class="save-btn" onclick="clearAllData()" style="background:var(--surface);border:1px solid var(--danger);color:var(--danger)">Clear all data</button>
+  </div>
+
   <button class="save-btn" onclick="saveSettings()">Save settings</button>
   <div class="save-confirm" id="saveConfirm">&#10003; Saved!</div>
   <div class="settings-card" style="margin-top:16px">
@@ -432,7 +441,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v1.3';
+  const APP_VERSION = 'v1.4';
 
   // ---- PWA SETUP ----
   function setupPWA() {
@@ -626,6 +635,8 @@
     localStorage.setItem('fuelDayLocked_' + date, 'true');
     renderDayNav();
     updateDayUI();
+    // Auto-backup to Files app on every lock
+    downloadJSON(collectAllData(), 'fuel-log-backup-' + date + '.json');
   }
 
   function unlockDay(date) {
@@ -1011,6 +1022,54 @@ For images: identify foods, estimate portions from plate/context, estimate macro
       if (weights.length > 1) html += `<text x="${W-pad.right}" y="${H-4}" text-anchor="end" fill="#555" font-size="7" font-family="DM Mono,monospace">${fmt(weights[weights.length-1].date)}</text>`;
     }
     svg.innerHTML = html;
+  }
+
+  // ---- DATA EXPORT / CLEAR ----
+  function collectAllData() {
+    const logs = {}, locked = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith('fuelLog_')) {
+        logs[key.replace('fuelLog_', '')] = JSON.parse(localStorage.getItem(key));
+      }
+      if (key.startsWith('fuelDayLocked_')) {
+        locked.push(key.replace('fuelDayLocked_', ''));
+      }
+    }
+    return {
+      exportedAt: new Date().toISOString(),
+      version: APP_VERSION,
+      settings: loadSettings(),
+      logs,
+      weights: loadWeights(),
+      lockedDays: locked.sort()
+    };
+  }
+
+  function downloadJSON(data, filename) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function exportData() {
+    const d = new Date().toISOString().split('T')[0];
+    downloadJSON(collectAllData(), 'fuel-log-' + d + '.json');
+  }
+
+  function clearAllData() {
+    if (!confirm('Delete ALL data?\n\nThis wipes every food log, weight entry, and setting from this device. Your downloaded backups in Files are not affected.\n\nThis cannot be undone.')) return;
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith('fuel')) keysToRemove.push(key);
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    window.location.reload();
   }
 
   // ---- UPDATE ----
