@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fuel Log</title>
 <style>
@@ -288,7 +291,7 @@
   <div class="subtitle" id="headerSubtitle">Loading...</div>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;margin-bottom:0">
     <div class="subtitle" id="headerSubtitle2" style="display:none"></div>
-    <button onclick="location.reload(true)" style="background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:0.65rem;cursor:pointer;padding:6px 12px;letter-spacing:1px;text-transform:uppercase;margin-left:auto;border-radius:6px;transition:border-color 0.2s" onmouseenter="this.style.borderColor='var(--accent)'" onmouseleave="this.style.borderColor='var(--border)'">&#8635; Update</button>
+    <button onclick="updateApp()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:0.65rem;cursor:pointer;padding:6px 12px;letter-spacing:1px;text-transform:uppercase;margin-left:auto;border-radius:6px;transition:border-color 0.2s" onmouseenter="this.style.borderColor='var(--accent)'" onmouseleave="this.style.borderColor='var(--border)'">&#8635; Update</button>
   </div>
   <div class="tabs">
     <button class="tab active" onclick="switchTab('today')">Today</button>
@@ -837,6 +840,27 @@ For images: identify foods, estimate portions from plate/context, estimate macro
     }
     svg.innerHTML = html;
   }
+
+  // ---- UPDATE ----
+  function updateApp() {
+    // Save key to sessionStorage so it survives the reload
+    const key = getApiKey();
+    if (key) sessionStorage.setItem('fuelApiKeyTemp', key);
+    window.location.href = window.location.pathname + '?v=' + Date.now();
+  }
+
+  // On load: if we came from an update, restore key and clean URL
+  (function() {
+    const temp = sessionStorage.getItem('fuelApiKeyTemp');
+    if (temp) {
+      localStorage.setItem('fuelApiKey', temp);
+      sessionStorage.removeItem('fuelApiKeyTemp');
+    }
+    // Clean the ?v= param from URL without reloading
+    if (window.location.search.startsWith('?v=')) {
+      history.replaceState(null, '', window.location.pathname);
+    }
+  })();
 
   // ---- INIT ----
   document.getElementById('dateLabel').textContent =
