@@ -723,7 +723,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.1.4';
+  const APP_VERSION = 'v2.1.5';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1390,6 +1390,8 @@ If the user references a previous meal (e.g. "same breakfast as yesterday"), use
 
     if (_weekNavObs) _weekNavObs.disconnect();
     if (_ringObs) _ringObs.disconnect();
+    const headerH = document.querySelector('header').offsetHeight;
+    const rootMargin = '-' + headerH + 'px 0px 0px 0px';
 
     _weekNavObs = new IntersectionObserver(entries => {
       if (!isTodayActive()) return;
@@ -1402,7 +1404,7 @@ If the user references a previous meal (e.g. "same breakfast as yesterday"), use
         hdr.style.display = 'none';
         prog.style.display = 'none';
       }
-    }, { threshold: 0 });
+    }, { threshold: 0, rootMargin: rootMargin });
 
     _ringObs = new IntersectionObserver(entries => {
       if (!isTodayActive()) return;
@@ -1413,7 +1415,7 @@ If the user references a previous meal (e.g. "same breakfast as yesterday"), use
       } else {
         prog.style.display = 'none';
       }
-    }, { threshold: 0 });
+    }, { threshold: 0, rootMargin: rootMargin });
 
     _weekNavObs.observe(document.getElementById('weekNav'));
     _ringObs.observe(document.querySelector('.ring-wrap'));
