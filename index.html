@@ -570,12 +570,9 @@
     background: var(--bg);
     border-bottom: 1px solid var(--border);
     display: none;
-    opacity: 0;
-    transform: translateY(-4px);
   }
   #stickySubHeader.visible {
     display: block;
-    animation: stickySlideIn 0.2s ease forwards;
   }
   #stickySubHeader .day-tabs {
     margin-bottom: 0;
@@ -583,20 +580,6 @@
   }
   #stickyProgress {
     padding: 4px 20px 8px;
-    display: none;
-    opacity: 0;
-  }
-  #stickyProgress.visible {
-    display: block;
-    animation: stickyFadeIn 0.18s ease forwards;
-  }
-  @keyframes stickySlideIn {
-    from { opacity: 0; transform: translateY(-6px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes stickyFadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
   }
   .sticky-prog-row { display: flex; gap: 12px; }
   .sticky-prog-col { flex: 1; min-width: 0; }
@@ -604,7 +587,7 @@
   .sticky-prog-val { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .sticky-prog-sub { font-size: 10px; color: var(--muted); }
   .sticky-prog-track { height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
-  .sticky-prog-fill { height: 100%; border-radius: 3px; transition: width 0.35s ease; }
+  .sticky-prog-fill { height: 100%; border-radius: 3px; /* scroll-driven — no CSS transition */ }
 
   /* ── MY FOODS PAGE ── */
   .sf-section-hdr {
@@ -631,7 +614,7 @@
   .sf-row-wrap {
     position: relative; overflow: hidden;
     border-radius: var(--r); margin-bottom: 4px;
-    background: var(--danger);
+    background: var(--bg);
   }
   .sf-row-inner {
     position: relative; z-index: 1;
@@ -1027,7 +1010,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.4.2';
+  const APP_VERSION = 'v2.5.0';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1643,10 +1626,12 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     document.getElementById('page-' + tab).classList.add('active');
     if (tab !== 'today') {
       closeLogSheet();
+      _stickyShown = false;
       document.getElementById('stickySubHeader').classList.remove('visible');
-      document.getElementById('stickyProgress').classList.remove('visible');
+      document.getElementById('stickyCalFill').style.width = '0%';
+      document.getElementById('stickyProFill').style.width = '0%';
     }
-    if (tab === 'today') { renderDayNav(); updateDayUI(); }
+    if (tab === 'today') { renderDayNav(); updateDayUI(); requestAnimationFrame(_applyStickyScroll); }
     if (tab === 'week') renderWeek();
     if (tab === 'weight') renderWeight();
     if (tab === 'settings') populateSettingsForm(loadSettings());
@@ -2227,62 +2212,80 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     const totalPro = log.reduce((a, e) => a + e.protein_g, 0);
     const calLeft = s.calGoal - totalCal;
     const over = totalCal > s.calGoal;
-    const calPct = Math.min((totalCal / s.calGoal) * 100, 100);
-    const proPct = Math.min((totalPro / s.proGoal) * 100, 100);
     const calColor = over ? 'var(--danger)' : 'var(--accent)';
+    // Store target percentages for scroll-driven bar widths
+    _stickyCalPct = Math.min((totalCal / s.calGoal) * 100, 100);
+    _stickyProPct = Math.min((totalPro / s.proGoal) * 100, 100);
+    // Update labels and colours (widths are set by _applyStickyScroll)
     document.getElementById('stickyCalVal').textContent = totalCal.toLocaleString() + ' cal';
     document.getElementById('stickyCalVal').style.color = calColor;
     document.getElementById('stickyCalLeft').textContent = calLeft >= 0
       ? calLeft.toLocaleString() + ' left' : Math.abs(calLeft).toLocaleString() + ' over';
-    document.getElementById('stickyCalFill').style.width = calPct + '%';
     document.getElementById('stickyCalFill').style.background = calColor;
     document.getElementById('stickyProVal').textContent = totalPro + 'g protein';
     const proLeft = s.proGoal - totalPro;
     document.getElementById('stickyProLeft').textContent = proLeft >= 0
       ? proLeft + 'g left' : Math.abs(proLeft) + 'g over';
-    document.getElementById('stickyProFill').style.width = proPct + '%';
+    // Re-apply scroll position so bar widths stay in sync after data changes
+    _applyStickyScroll();
   }
 
+  // ---- SCROLL-DRIVEN STICKY HEADER ----
+  let _stickyCalPct = 0, _stickyProPct = 0;
+  let _scrollRAF = null;
+  let _stickyShown = false;
+  // Keep stubs so old call-sites don't throw
   let _weekNavObs = null, _ringObs = null;
 
-  function setupStickyObservers() {
-    function isTodayActive() {
-      return document.getElementById('page-today').classList.contains('active');
-    }
-    const hdr = document.getElementById('stickySubHeader');
-    const prog = document.getElementById('stickyProgress');
-
-    if (_weekNavObs) _weekNavObs.disconnect();
-    if (_ringObs) _ringObs.disconnect();
+  function _applyStickyScroll() {
+    if (!document.getElementById('page-today').classList.contains('active')) return;
     const headerH = document.querySelector('header').offsetHeight;
-    const rootMargin = '-' + headerH + 'px 0px 0px 0px';
+    const weekNavEl = document.getElementById('weekNav');
+    const ringEl = document.querySelector('.ring-wrap');
+    if (!weekNavEl || !ringEl) return;
 
-    _weekNavObs = new IntersectionObserver(entries => {
-      if (!isTodayActive()) return;
-      const visible = entries[0].isIntersecting;
-      if (!visible) {
+    const hdr = document.getElementById('stickySubHeader');
+    const weekNavBottom = weekNavEl.getBoundingClientRect().bottom;
+    const ringBottom   = ringEl.getBoundingClientRect().bottom;
+
+    // Show / hide day-tab strip when weekNav clears the main header
+    const shouldShow = weekNavBottom < headerH;
+    if (shouldShow !== _stickyShown) {
+      _stickyShown = shouldShow;
+      if (shouldShow) {
         renderStickyDayTabs();
         updateStickyTop();
         hdr.classList.add('visible');
       } else {
         hdr.classList.remove('visible');
-        prog.classList.remove('visible');
       }
-    }, { threshold: 0, rootMargin: rootMargin });
+    }
 
-    _ringObs = new IntersectionObserver(entries => {
-      if (!isTodayActive()) return;
-      const visible = entries[0].isIntersecting;
-      if (!visible) {
-        updateStickyProgress();
-        prog.classList.add('visible');
-      } else {
-        prog.classList.remove('visible');
-      }
-    }, { threshold: 0, rootMargin: rootMargin });
+    // Scroll-driven bar fill: bars grow from 0 → actual value as the ring
+    // scrolls from (headerH + 40) down to (headerH - 60) in viewport space.
+    const rangeStart = headerH + 40;
+    const rangeEnd   = headerH - 60;
+    const progress = Math.min(Math.max((rangeStart - ringBottom) / (rangeStart - rangeEnd), 0), 1);
+    document.getElementById('stickyCalFill').style.width = (_stickyCalPct * progress) + '%';
+    document.getElementById('stickyProFill').style.width = (_stickyProPct * progress) + '%';
+  }
 
-    _weekNavObs.observe(document.getElementById('weekNav'));
-    _ringObs.observe(document.querySelector('.ring-wrap'));
+  function setupStickyObservers() {
+    // Disconnect any leftover observers (belt-and-suspenders)
+    if (_weekNavObs) { _weekNavObs.disconnect(); _weekNavObs = null; }
+    if (_ringObs)    { _ringObs.disconnect();    _ringObs = null;    }
+
+    window.addEventListener('scroll', function() {
+      if (_scrollRAF) return;
+      _scrollRAF = requestAnimationFrame(function() {
+        _scrollRAF = null;
+        _applyStickyScroll();
+      });
+    }, { passive: true });
+
+    // Seed values and run an immediate check
+    updateStickyProgress();
+    _applyStickyScroll();
   }
 
   // ---- WEEK TAB ----
@@ -2464,24 +2467,4 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     const temp = sessionStorage.getItem('fuelApiKeyTemp');
     if (temp) { localStorage.setItem('fuelApiKey', temp); sessionStorage.removeItem('fuelApiKeyTemp'); }
     if (window.location.search.startsWith('?v=')) history.replaceState(null, '', window.location.pathname);
-    const fromVersion = sessionStorage.getItem('fuelUpdateFromVersion');
-    if (fromVersion) {
-      sessionStorage.removeItem('fuelUpdateFromVersion');
-      setTimeout(function() {
-        if (fromVersion === APP_VERSION) showToast('Already up to date (' + APP_VERSION + ')');
-        else showToast('Updated to ' + APP_VERSION + ' ✓');
-      }, 600);
-    }
-  })();
-
-  // ---- INIT ----
-  setupPWA();
-  document.getElementById('versionBadge').textContent = APP_VERSION;
-  applySettings(loadSettings());
-  renderDayNav();
-  updateDayUI();
-  setupStickyObservers();
-  updateStickyTop();
-</script>
-</body>
-</html>
+    const fromVersion = 
