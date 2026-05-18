@@ -477,6 +477,137 @@
   .sticky-prog-sub { font-size: 10px; color: var(--muted); }
   .sticky-prog-track { height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
   .sticky-prog-fill { height: 100%; border-radius: 3px; transition: width 0.35s ease; }
+
+  /* ── MY FOODS PAGE ── */
+  .sf-section-hdr {
+    display: flex; align-items: center; padding: 5px 0 4px;
+    margin-top: 16px;
+  }
+  .sf-section-hdr:first-child { margin-top: 4px; }
+  .sf-section-hdr-icon { font-size: 13px; margin-right: 6px; flex-shrink: 0; }
+  .sf-section-hdr-label {
+    font-size: 11px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.7px; flex: 1;
+  }
+  .sf-section-add-btn {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    width: 22px; height: 22px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .sf-section-add-btn i { font-size: 12px; color: var(--muted); transition: color 0.15s; }
+  .sf-section-add-btn:hover { border-color: rgba(52,211,153,0.35); background: var(--accent-dim); }
+  .sf-section-add-btn:hover i { color: var(--accent); }
+
+  /* Swipe-to-delete rows */
+  .sf-row-wrap {
+    position: relative; overflow: hidden;
+    border-radius: var(--r); margin-bottom: 4px;
+    background: var(--danger);
+  }
+  .sf-row-inner {
+    background: var(--surface); border-radius: var(--r);
+    display: flex; align-items: center; padding: 11px 14px;
+    cursor: pointer; transition: transform 0.22s ease; gap: 10px;
+  }
+  .sf-row-inner:active { background: var(--surface2); }
+  .sf-row-inner.swiped { transform: translateX(-76px); border-radius: var(--r) 0 0 var(--r); }
+  .sf-row-delete-btn {
+    position: absolute; right: 0; top: 0; bottom: 0; width: 76px;
+    background: var(--danger); border: none; color: #fff;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.2px;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    border-radius: 0 var(--r) var(--r) 0;
+  }
+  .sf-row-name { flex: 1; font-size: 14px; color: var(--text); font-weight: 500; }
+  .sf-row-meta { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .sf-row-chevron { font-size: 15px; color: var(--border); flex-shrink: 0; }
+  .sf-empty-row {
+    display: flex; align-items: center; padding: 13px 14px;
+    border: 1px dashed var(--border); border-radius: var(--r);
+    margin-bottom: 4px; cursor: pointer; transition: all 0.15s;
+  }
+  .sf-empty-row:hover, .sf-empty-row:active { border-color: rgba(52,211,153,0.25); background: var(--accent-dim); }
+  .sf-empty-row i { font-size: 14px; color: var(--muted); margin-right: 8px; }
+  .sf-empty-row span { font-size: 13px; color: var(--muted); }
+
+  /* My Foods form */
+  .sf-form-header {
+    display: flex; align-items: center; padding-bottom: 16px;
+    position: relative;
+  }
+  .sf-back-btn {
+    display: flex; align-items: center; gap: 5px;
+    background: none; border: none; color: var(--accent);
+    font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500;
+    cursor: pointer; padding: 0; z-index: 1;
+  }
+  .sf-form-title {
+    font-size: 17px; font-weight: 700; color: var(--text);
+    position: absolute; left: 50%; transform: translateX(-50%);
+    pointer-events: none;
+  }
+  .sf-result-card {
+    background: var(--surface); border-radius: var(--r);
+    border: 1px solid var(--border); padding: 16px; margin-top: 14px;
+    animation: fadeUp 0.22s ease;
+  }
+  .sf-name-input {
+    background: transparent; border: none;
+    border-bottom: 1.5px solid var(--border);
+    width: 100%; padding: 0 0 10px; font-size: 16px; font-weight: 700;
+    color: var(--text); font-family: 'Inter', sans-serif;
+    outline: none; margin-bottom: 12px; transition: border-color 0.2s;
+    display: block;
+  }
+  .sf-name-input:focus { border-bottom-color: rgba(52,211,153,0.35); }
+  .sf-macro-grid { display: flex; gap: 8px; margin-bottom: 14px; }
+  .sf-macro-item {
+    flex: 1; background: var(--surface2); border-radius: var(--r-sm); padding: 8px 10px;
+  }
+  .sf-macro-label {
+    font-size: 10px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
+  }
+  .sf-macro-input {
+    background: transparent; border: none; width: 100%;
+    font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 700;
+    outline: none; -moz-appearance: textfield; font-variant-numeric: tabular-nums;
+  }
+  .sf-macro-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .sf-macro-input.cal { color: var(--accent); }
+  .sf-macro-input.pro { color: var(--accent2); }
+  .sf-field-label { font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 6px; display: block; }
+  .sf-serving-btn {
+    width: 100%; background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: var(--r-sm); padding: 10px 13px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; transition: border-color 0.2s; margin-bottom: 14px;
+    font-family: 'Inter', sans-serif;
+  }
+  .sf-serving-btn:hover { border-color: rgba(52,211,153,0.35); }
+  .sf-serving-val { font-size: 14px; font-weight: 600; color: var(--text); }
+  .sf-serving-btn i { font-size: 16px; color: var(--muted); }
+  .sf-delete-btn {
+    background: none; border: 1px solid rgba(248,113,113,0.28);
+    color: var(--danger); font-family: 'Inter', sans-serif;
+    font-size: 13px; font-weight: 600; padding: 11px;
+    border-radius: var(--r); cursor: pointer; transition: all 0.2s;
+    width: 100%; margin-top: 6px;
+  }
+  .sf-delete-btn:hover { background: var(--danger-dim); }
+
+  /* Serving size picker list */
+  .sf-picker-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 18px; cursor: pointer; transition: background 0.12s;
+    font-size: 14px; color: var(--text); font-weight: 500;
+    border-bottom: 1px solid var(--border);
+  }
+  .sf-picker-item:last-child { border-bottom: none; }
+  .sf-picker-item:hover { background: var(--surface2); }
+  .sf-picker-item.selected { color: var(--accent); }
+  .sf-picker-item.selected i { font-size: 16px; color: var(--accent); }
 </style>
 </head>
 <body>
@@ -517,6 +648,17 @@
       <button class="edit-save-btn" onclick="saveEditOverlay()">Save changes</button>
       <button class="edit-cancel-btn" onclick="closeEditOverlay()">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!-- SERVING SIZE PICKER -->
+<div id="servingPicker" class="edit-overlay" onclick="handleServingPickerBg(event)">
+  <div class="edit-modal" style="max-width:320px;padding:0;overflow:hidden;">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:14px;font-weight:700;color:var(--text)">Serving size</span>
+      <button class="edit-close-btn" onclick="closeServingPicker()">&#215;</button>
+    </div>
+    <div id="servingPickerList" style="max-height:360px;overflow-y:auto;"></div>
   </div>
 </div>
 
@@ -661,6 +803,11 @@
   <div id="weightList"></div>
 </div>
 
+<!-- MY FOODS -->
+<div class="page" id="page-myfoods">
+  <div id="myfoodsContent"></div>
+</div>
+
 <!-- SETTINGS -->
 <div class="page" id="page-settings">
   <div class="section-label" style="margin-top:4px">Your profile</div>
@@ -715,6 +862,10 @@
     <i class="ti ti-scale" aria-hidden="true"></i>
     <span class="tab-label">Weight</span>
   </button>
+  <button class="tab-item" onclick="switchTab('myfoods')">
+    <i class="ti ti-bookmark" aria-hidden="true"></i>
+    <span class="tab-label">My Foods</span>
+  </button>
   <button class="tab-item" onclick="switchTab('settings')">
     <i class="ti ti-settings" aria-hidden="true"></i>
     <span class="tab-label">Settings</span>
@@ -723,7 +874,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.1.5';
+  const APP_VERSION = 'v2.3.0';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -732,6 +883,348 @@
     { key: 'dinner',    label: 'Dinner',    tiIcon: 'ti-moon',    iconColor: 'var(--accent2)' },
     { key: 'snack',     label: 'Snacks',    tiIcon: 'ti-star',    iconColor: 'var(--danger)'  },
   ];
+
+  // ---- SERVING SIZES ----
+  const SERVING_SIZES = [
+    '1 serving', '1 cup', '1 slice', '1 piece', '1 scoop',
+    '2 tbsp', '1 oz', '2 oz', '4 oz', '6 oz', '8 oz',
+    '12 fl oz', '16 fl oz', '1 bar', '1 packet',
+  ];
+
+  // ---- SAVED FOODS ----
+  function loadSavedFoods() {
+    try { return JSON.parse(localStorage.getItem('fuelSavedFoods') || '[]'); }
+    catch { return []; }
+  }
+  function saveSavedFoods(arr) { localStorage.setItem('fuelSavedFoods', JSON.stringify(arr)); }
+
+  // My Foods state
+  let myFoodsView = 'library'; // 'library' | 'form'
+  let editingFoodId = null;
+  let sfDraft = { name: '', calories: 0, protein_g: 0, serving_size: '1 serving', meal: 'breakfast' };
+  let sfPendingImages = [];
+  let sfAnalyzed = false;
+
+  function escHtml(str) {
+    return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function renderMyFoods() {
+    const el = document.getElementById('myfoodsContent');
+    if (!el) return;
+    if (myFoodsView === 'library') {
+      el.innerHTML = renderFoodsLibrary();
+      attachSwipeHandlers();
+    } else {
+      el.innerHTML = renderFoodForm();
+      attachFoodFormHandlers();
+    }
+  }
+
+  function renderFoodsLibrary() {
+    const foods = loadSavedFoods();
+    let html = '';
+    MEALS.forEach(m => {
+      const mFoods = foods.filter(f => f.meal === m.key);
+      html += `<div class="sf-section-hdr">
+        <i class="ti ${m.tiIcon} sf-section-hdr-icon" aria-hidden="true" style="color:${m.iconColor}"></i>
+        <span class="sf-section-hdr-label">${m.label}</span>
+        <button class="sf-section-add-btn" onclick="openNewFood('${m.key}')" aria-label="Add ${m.label} item">
+          <i class="ti ti-plus"></i>
+        </button>
+      </div>`;
+      if (mFoods.length > 0) {
+        mFoods.forEach(f => {
+          html += `<div class="sf-row-wrap" data-id="${f.id}">
+            <div class="sf-row-inner">
+              <span class="sf-row-name">${escHtml(f.name)}</span>
+              <span class="sf-row-meta">${escHtml(f.serving_size || '1 serving')} · ${f.calories} cal · ${f.protein_g}g</span>
+              <i class="ti ti-chevron-right sf-row-chevron" aria-hidden="true"></i>
+            </div>
+            <button class="sf-row-delete-btn" onclick="deleteFood('${f.id}')">Delete</button>
+          </div>`;
+        });
+      } else {
+        html += `<div class="sf-empty-row" onclick="openNewFood('${m.key}')">
+          <i class="ti ti-plus" aria-hidden="true"></i>
+          <span>Add a ${m.label.toLowerCase()} item</span>
+        </div>`;
+      }
+    });
+    return html;
+  }
+
+  function renderFoodForm() {
+    const isEdit = editingFoodId !== null;
+    const resultHTML = sfAnalyzed ? `
+      <div class="sf-result-card">
+        <p class="sf-field-label" style="margin-bottom:8px">${isEdit ? 'Edit item details:' : 'Edit anything before saving:'}</p>
+        <input type="text" id="sfName" class="sf-name-input" value="${escHtml(sfDraft.name)}" placeholder="Item name" />
+        <div class="sf-macro-grid">
+          <div class="sf-macro-item">
+            <div class="sf-macro-label">Calories</div>
+            <input type="number" id="sfCal" class="sf-macro-input cal" value="${sfDraft.calories}" min="0" />
+          </div>
+          <div class="sf-macro-item">
+            <div class="sf-macro-label">Protein (g)</div>
+            <input type="number" id="sfPro" class="sf-macro-input pro" value="${sfDraft.protein_g}" min="0" step="0.1" />
+          </div>
+        </div>
+        <label class="sf-field-label">Serving size</label>
+        <button class="sf-serving-btn" onclick="openServingPicker()" type="button">
+          <span class="sf-serving-val" id="sfServingDisplay">${escHtml(sfDraft.serving_size || '1 serving')}</span>
+          <i class="ti ti-chevron-down" aria-hidden="true"></i>
+        </button>
+        <label class="sf-field-label">Default meal group</label>
+        <div class="meal-pills" id="sfMealPills" style="margin-bottom:16px"></div>
+        <button class="save-btn" onclick="saveFood()">Save Item</button>
+        ${isEdit ? `<button class="sf-delete-btn" onclick="confirmDeleteFood('${editingFoodId}')">Delete item</button>` : ''}
+      </div>` : '';
+
+    return `
+      <div class="sf-form-header">
+        <button class="sf-back-btn" onclick="backToLibrary()">
+          <i class="ti ti-arrow-left" style="font-size:17px"></i>
+          My Foods
+        </button>
+        <span class="sf-form-title">${isEdit ? 'Edit Item' : 'New Item'}</span>
+      </div>
+      <div style="background:var(--surface);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;">
+        <textarea id="sfInput" placeholder="Describe it… e.g. Dunkin iced coffee with oat milk, one pump vanilla" style="background:transparent;border:none;padding:13px 15px;width:100%;font-family:'Inter',sans-serif;font-size:14px;color:var(--text);resize:none;outline:none;min-height:78px;line-height:1.5;display:block;"></textarea>
+        <div style="display:flex;gap:8px;padding:8px 12px;border-top:1px solid var(--border);">
+          <button class="photo-btn" id="sfPhotoBtn" onclick="document.getElementById('sfPhotoInput').click()" style="width:40px;height:38px;" title="Add photo">
+            <i class="ti ti-camera" aria-hidden="true" style="font-size:18px"></i>
+          </button>
+          <input type="file" id="sfPhotoInput" accept="image/*" multiple onchange="handleSfPhoto(event)" style="display:none" />
+          <button onclick="analyzeFood()" id="sfAnalyzeBtn" class="log-btn" style="font-size:14px;padding:10px;">Analyze</button>
+        </div>
+      </div>
+      ${resultHTML}`;
+  }
+
+  function attachFoodFormHandlers() {
+    renderSfMealPills(sfDraft.meal);
+  }
+
+  function renderSfMealPills(selected) {
+    const el = document.getElementById('sfMealPills');
+    if (!el) return;
+    el.innerHTML = MEALS.map(m =>
+      `<button class="mpill${m.key === selected ? ' sel' : ''}" onclick="selectSfMeal('${m.key}')">${m.label}</button>`
+    ).join('');
+  }
+
+  function selectSfMeal(key) {
+    sfDraft.meal = key;
+    renderSfMealPills(key);
+  }
+
+  function openNewFood(mealKey) {
+    myFoodsView = 'form';
+    editingFoodId = null;
+    sfPendingImages = [];
+    sfAnalyzed = false;
+    sfDraft = { name: '', calories: 0, protein_g: 0, serving_size: '1 serving', meal: mealKey || 'breakfast' };
+    renderMyFoods();
+  }
+
+  function openEditFood(id) {
+    const food = loadSavedFoods().find(f => f.id === id);
+    if (!food) return;
+    myFoodsView = 'form';
+    editingFoodId = id;
+    sfPendingImages = [];
+    sfAnalyzed = true;
+    sfDraft = { name: food.name, calories: food.calories, protein_g: food.protein_g, serving_size: food.serving_size || '1 serving', meal: food.meal };
+    renderMyFoods();
+  }
+
+  function backToLibrary() {
+    myFoodsView = 'library';
+    editingFoodId = null;
+    sfPendingImages = [];
+    sfAnalyzed = false;
+    renderMyFoods();
+  }
+
+  async function analyzeFood() {
+    const input = document.getElementById('sfInput');
+    const btn = document.getElementById('sfAnalyzeBtn');
+    const text = input ? input.value.trim() : '';
+    if (!text && sfPendingImages.length === 0) return;
+    if (!getApiKey()) { showToast('Add your API key in Settings first'); return; }
+    btn.disabled = true;
+    btn.textContent = 'Analyzing…';
+
+    const systemPrompt = `You are a nutrition assistant. Analyze this food item for a personal food library.
+
+Respond with JSON ONLY. No markdown, no backticks.
+Format: {"name":"Food name","calories":number,"protein_g":number,"serving_size":"X unit","response":"1 sentence note"}
+
+For serving_size, pick the single closest match from this exact list:
+1 serving, 1 cup, 1 slice, 1 piece, 1 scoop, 2 tbsp, 1 oz, 2 oz, 4 oz, 6 oz, 8 oz, 12 fl oz, 16 fl oz, 1 bar, 1 packet
+
+Return calories and protein for exactly one unit of the chosen serving_size.`;
+
+    const userContent = sfPendingImages.length > 0
+      ? [...sfPendingImages.map(img => ({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } })),
+         { type: 'text', text: text || 'What is this food? Give name, calories, protein, and serving size.' }]
+      : text;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': getApiKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 400, system: systemPrompt, messages: [{ role: 'user', content: userContent }] })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast('API error: ' + ((data.error && data.error.message) || res.status));
+        const b = document.getElementById('sfAnalyzeBtn');
+        if (b) { b.disabled = false; b.textContent = 'Analyze'; }
+        return;
+      }
+      const rawText = data.content.map(b => b.text || '').join('');
+      let parsed;
+      try { parsed = JSON.parse(rawText); }
+      catch { const m = rawText.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : null; }
+      if (parsed && parsed.name) {
+        const matched = SERVING_SIZES.find(s => s.toLowerCase() === (parsed.serving_size || '').toLowerCase()) || '1 serving';
+        sfDraft = {
+          name: parsed.name,
+          calories: Math.round(parsed.calories || 0),
+          protein_g: Math.round((parsed.protein_g || 0) * 10) / 10,
+          serving_size: matched,
+          meal: sfDraft.meal,
+        };
+        sfAnalyzed = true;
+        renderMyFoods();
+      } else {
+        showToast('Could not parse — try rephrasing');
+        const b = document.getElementById('sfAnalyzeBtn');
+        if (b) { b.disabled = false; b.textContent = 'Analyze'; }
+      }
+    } catch(err) {
+      showToast('Error: ' + (err && err.message ? err.message : 'Unknown'));
+      const b = document.getElementById('sfAnalyzeBtn');
+      if (b) { b.disabled = false; b.textContent = 'Analyze'; }
+    }
+  }
+
+  function saveFood() {
+    const name = (document.getElementById('sfName') && document.getElementById('sfName').value.trim()) || sfDraft.name;
+    const cal = parseInt((document.getElementById('sfCal') && document.getElementById('sfCal').value) || sfDraft.calories) || 0;
+    const pro = parseFloat((document.getElementById('sfPro') && document.getElementById('sfPro').value) || sfDraft.protein_g) || 0;
+    if (!name) { showToast('Add a name first'); return; }
+    const foods = loadSavedFoods();
+    if (editingFoodId) {
+      const idx = foods.findIndex(f => f.id === editingFoodId);
+      if (idx >= 0) foods[idx] = { ...foods[idx], name, calories: cal, protein_g: pro, serving_size: sfDraft.serving_size, meal: sfDraft.meal };
+    } else {
+      foods.push({ id: Date.now().toString(), name, calories: cal, protein_g: pro, serving_size: sfDraft.serving_size, meal: sfDraft.meal });
+    }
+    saveSavedFoods(foods);
+    const wasEdit = !!editingFoodId;
+    backToLibrary();
+    showToast(wasEdit ? 'Item updated' : 'Item saved');
+  }
+
+  function deleteFood(id) {
+    saveSavedFoods(loadSavedFoods().filter(f => f.id !== id));
+    renderMyFoods();
+    showToast('Item deleted');
+  }
+
+  function confirmDeleteFood(id) {
+    showConfirm('Delete this item?', 'It will be removed from your My Foods library.', 'Delete', () => deleteFood(id));
+  }
+
+  // ---- SWIPE TO DELETE ----
+  function attachSwipeHandlers() {
+    document.querySelectorAll('.sf-row-wrap').forEach(wrap => {
+      const inner = wrap.querySelector('.sf-row-inner');
+      if (!inner) return;
+      let startX = 0, startY = 0, moved = false;
+      inner.addEventListener('touchstart', e => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        moved = false;
+      }, { passive: true });
+      inner.addEventListener('touchmove', e => {
+        moved = true;
+      }, { passive: true });
+      inner.addEventListener('touchend', e => {
+        const dx = e.changedTouches[0].clientX - startX;
+        const dy = e.changedTouches[0].clientY - startY;
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+          if (dx < 0) {
+            document.querySelectorAll('.sf-row-inner.swiped').forEach(el => { if (el !== inner) el.classList.remove('swiped'); });
+            inner.classList.add('swiped');
+          } else {
+            inner.classList.remove('swiped');
+          }
+        } else if (!moved || (Math.abs(dx) < 8 && Math.abs(dy) < 8)) {
+          if (inner.classList.contains('swiped')) {
+            inner.classList.remove('swiped');
+          } else {
+            openEditFood(wrap.dataset.id);
+          }
+        }
+      }, { passive: true });
+    });
+  }
+
+  document.addEventListener('touchstart', e => {
+    if (!e.target.closest('.sf-row-wrap')) {
+      document.querySelectorAll('.sf-row-inner.swiped').forEach(el => el.classList.remove('swiped'));
+    }
+  }, { passive: true });
+
+  // ---- SERVING SIZE PICKER ----
+  function openServingPicker() {
+    const current = sfDraft.serving_size || '1 serving';
+    document.getElementById('servingPickerList').innerHTML = SERVING_SIZES.map(s =>
+      `<div class="sf-picker-item${s === current ? ' selected' : ''}" onclick="selectServingSize('${s}')">
+        <span>${s}</span>
+        ${s === current ? '<i class="ti ti-check" aria-hidden="true"></i>' : '<span></span>'}
+      </div>`
+    ).join('');
+    document.getElementById('servingPicker').classList.add('open');
+  }
+
+  function closeServingPicker() { document.getElementById('servingPicker').classList.remove('open'); }
+
+  function handleServingPickerBg(e) {
+    if (e.target === document.getElementById('servingPicker')) closeServingPicker();
+  }
+
+  function selectServingSize(size) {
+    sfDraft.serving_size = size;
+    const el = document.getElementById('sfServingDisplay');
+    if (el) el.textContent = size;
+    closeServingPicker();
+  }
+
+  // ---- PHOTO for My Foods ----
+  function handleSfPhoto(event) {
+    const files = Array.from(event.target.files);
+    if (!files.length) return;
+    const remaining = 3 - sfPendingImages.length;
+    if (remaining <= 0) { showToast('Max 3 photos'); event.target.value = ''; return; }
+    files.slice(0, remaining).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        compressImage(e.target.result, (data, mediaType) => {
+          sfPendingImages.push({ data, mediaType, previewURL: e.target.result });
+          const btn = document.getElementById('sfPhotoBtn');
+          if (btn) btn.classList.add('has-photo');
+          showToast(sfPendingImages.length + ' photo' + (sfPendingImages.length > 1 ? 's' : '') + ' ready');
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+    event.target.value = '';
+  }
 
   // ---- MEAL STATE ----
   let selectedMeal = 'breakfast';
@@ -995,7 +1488,7 @@
   // ---- TABS ----
   function switchTab(tab) {
     document.querySelectorAll('.tab-item').forEach((t, i) => {
-      t.classList.toggle('active', ['today','week','weight','settings'][i] === tab);
+      t.classList.toggle('active', ['today','week','weight','myfoods','settings'][i] === tab);
     });
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + tab).classList.add('active');
@@ -1007,6 +1500,13 @@
     if (tab === 'week') renderWeek();
     if (tab === 'weight') renderWeight();
     if (tab === 'settings') populateSettingsForm(loadSettings());
+    if (tab === 'myfoods') {
+      myFoodsView = 'library';
+      editingFoodId = null;
+      sfPendingImages = [];
+      sfAnalyzed = false;
+      renderMyFoods();
+    }
   }
 
   // ---- DAY UI ----
@@ -1231,7 +1731,6 @@ If the user references a previous meal (e.g. "same breakfast as yesterday"), use
         saveLog(selectedDate, currentDayLog);
         updateDayUI(); renderDayNav();
         input.value = ''; clearPhoto();
-        // Scroll to the meal section that just got the new entry
         setTimeout(() => {
           const el = document.querySelector(`[data-meal="${selectedMeal}"]`);
           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1257,7 +1756,6 @@ If the user references a previous meal (e.g. "same breakfast as yesterday"), use
     const e = currentDayLog[i];
     document.getElementById('editItemName').textContent = e.name;
     const qty = e.quantity || 1;
-    // Use stored per-unit values if available, otherwise derive from totals ÷ quantity
     editCalPerUnit = (e.cal_per_unit != null) ? e.cal_per_unit : (e.calories / qty);
     editProPerUnit = (e.protein_per_unit != null) ? e.protein_per_unit : (e.protein_g / qty);
     document.getElementById('editQty').value = qty;
@@ -1300,7 +1798,6 @@ If the user references a previous meal (e.g. "same breakfast as yesterday"), use
       calories: cal,
       protein_g: pro,
       quantity: qty,
-      // Recalculate per-unit from final values so future edits stay accurate
       cal_per_unit: Math.round((cal / qty) * 10) / 10,
       protein_per_unit: Math.round((pro / qty) * 10) / 10,
       meal: editingMeal || currentDayLog[editingIndex].meal,
