@@ -570,6 +570,12 @@
     background: var(--bg);
     border-bottom: 1px solid var(--border);
     display: none;
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  #stickySubHeader.visible {
+    display: block;
+    animation: stickySlideIn 0.2s ease forwards;
   }
   #stickySubHeader .day-tabs {
     margin-bottom: 0;
@@ -578,6 +584,19 @@
   #stickyProgress {
     padding: 4px 20px 8px;
     display: none;
+    opacity: 0;
+  }
+  #stickyProgress.visible {
+    display: block;
+    animation: stickyFadeIn 0.18s ease forwards;
+  }
+  @keyframes stickySlideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes stickyFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
   .sticky-prog-row { display: flex; gap: 12px; }
   .sticky-prog-col { flex: 1; min-width: 0; }
@@ -615,6 +634,7 @@
     background: var(--danger);
   }
   .sf-row-inner {
+    position: relative; z-index: 1;
     background: var(--surface); border-radius: var(--r);
     display: flex; align-items: center; padding: 11px 14px;
     cursor: pointer; transition: transform 0.22s ease; gap: 10px;
@@ -1007,7 +1027,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.4.0';
+  const APP_VERSION = 'v2.4.1';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1277,26 +1297,30 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     document.querySelectorAll('.sf-row-wrap').forEach(wrap => {
       const inner = wrap.querySelector('.sf-row-inner');
       if (!inner) return;
-      let startX = 0, startY = 0, moved = false;
+      let startX = 0, startY = 0, swiping = false, scrolling = false;
       inner.addEventListener('touchstart', e => {
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
-        moved = false;
+        swiping = false; scrolling = false;
       }, { passive: true });
       inner.addEventListener('touchmove', e => {
-        moved = true;
-      }, { passive: true });
+        if (scrolling) return;
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+        if (!swiping && Math.abs(dy) > Math.abs(dx)) { scrolling = true; return; }
+        if (Math.abs(dx) > 6) { swiping = true; e.preventDefault(); }
+      }, { passive: false });
       inner.addEventListener('touchend', e => {
         const dx = e.changedTouches[0].clientX - startX;
         const dy = e.changedTouches[0].clientY - startY;
-        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
-          if (dx < 0) {
+        if (swiping) {
+          if (dx < -40) {
             document.querySelectorAll('.sf-row-inner.swiped').forEach(el => { if (el !== inner) el.classList.remove('swiped'); });
             inner.classList.add('swiped');
           } else {
             inner.classList.remove('swiped');
           }
-        } else if (!moved || (Math.abs(dx) < 8 && Math.abs(dy) < 8)) {
+        } else if (!scrolling && Math.abs(dx) < 8 && Math.abs(dy) < 8) {
           if (inner.classList.contains('swiped')) {
             inner.classList.remove('swiped');
           } else {
@@ -1624,8 +1648,8 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     document.getElementById('page-' + tab).classList.add('active');
     if (tab !== 'today') {
       closeLogSheet();
-      document.getElementById('stickySubHeader').style.display = 'none';
-      document.getElementById('stickyProgress').style.display = 'none';
+      document.getElementById('stickySubHeader').classList.remove('visible');
+      document.getElementById('stickyProgress').classList.remove('visible');
     }
     if (tab === 'today') { renderDayNav(); updateDayUI(); }
     if (tab === 'week') renderWeek();
@@ -2242,12 +2266,12 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
       if (!isTodayActive()) return;
       const visible = entries[0].isIntersecting;
       if (!visible) {
-        hdr.style.display = 'block';
         renderStickyDayTabs();
         updateStickyTop();
+        hdr.classList.add('visible');
       } else {
-        hdr.style.display = 'none';
-        prog.style.display = 'none';
+        hdr.classList.remove('visible');
+        prog.classList.remove('visible');
       }
     }, { threshold: 0, rootMargin: rootMargin });
 
@@ -2255,10 +2279,10 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
       if (!isTodayActive()) return;
       const visible = entries[0].isIntersecting;
       if (!visible) {
-        prog.style.display = 'block';
         updateStickyProgress();
+        prog.classList.add('visible');
       } else {
-        prog.style.display = 'none';
+        prog.classList.remove('visible');
       }
     }, { threshold: 0, rootMargin: rootMargin });
 
