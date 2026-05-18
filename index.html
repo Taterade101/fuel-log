@@ -198,8 +198,9 @@
     position: fixed;
     bottom: calc(53px + env(safe-area-inset-bottom));
     left: 0; right: 0; z-index: 45;
-    background: var(--bg);
-    border-top: 1px solid var(--border);
+    background: var(--surface);
+    border-top: 1.5px solid rgba(255,255,255,0.12);
+    border-radius: 14px 14px 0 0;
     padding: 10px 20px 8px;
   }
   /* ── PHOTO INPUT ── */
@@ -451,6 +452,31 @@
     box-shadow: 0 6px 24px rgba(0,0,0,0.4);
   }
   .toast.show { opacity: 1; }
+
+  /* ── STICKY SUB-HEADER ── */
+  #stickySubHeader {
+    position: sticky;
+    top: 66px; /* JS overrides this dynamically */
+    z-index: 39;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    display: none;
+  }
+  #stickySubHeader .day-tabs {
+    margin-bottom: 0;
+    padding: 5px 20px 6px;
+  }
+  #stickyProgress {
+    padding: 4px 20px 8px;
+    display: none;
+  }
+  .sticky-prog-row { display: flex; gap: 12px; }
+  .sticky-prog-col { flex: 1; min-width: 0; }
+  .sticky-prog-nums { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+  .sticky-prog-val { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .sticky-prog-sub { font-size: 10px; color: var(--muted); }
+  .sticky-prog-track { height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .sticky-prog-fill { height: 100%; border-radius: 3px; transition: width 0.35s ease; }
 </style>
 </head>
 <body>
@@ -504,6 +530,29 @@
   </div>
   <div class="header-sub" id="headerSubtitle">Loading…</div>
 </header>
+
+<!-- STICKY SUB-HEADER (Today tab only) -->
+<div id="stickySubHeader">
+  <div class="day-tabs" id="stickyDayTabs"></div>
+  <div id="stickyProgress">
+    <div class="sticky-prog-row">
+      <div class="sticky-prog-col">
+        <div class="sticky-prog-nums">
+          <span class="sticky-prog-val" id="stickyCalVal" style="color:var(--accent)"></span>
+          <span class="sticky-prog-sub" id="stickyCalLeft"></span>
+        </div>
+        <div class="sticky-prog-track"><div class="sticky-prog-fill" id="stickyCalFill" style="background:var(--accent);width:0%"></div></div>
+      </div>
+      <div class="sticky-prog-col">
+        <div class="sticky-prog-nums">
+          <span class="sticky-prog-val" id="stickyProVal" style="color:var(--accent2)"></span>
+          <span class="sticky-prog-sub" id="stickyProLeft"></span>
+        </div>
+        <div class="sticky-prog-track"><div class="sticky-prog-fill" id="stickyProFill" style="background:var(--accent2);width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- TODAY -->
 <div class="page active" id="page-today">
@@ -660,7 +709,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.1.2';
+  const APP_VERSION = 'v2.1.3';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -745,6 +794,7 @@
       s.startWeight + ' → ' + s.goalWeight + ' lbs  ·  ' + s.calGoal.toLocaleString() + ' cal  ·  ' + s.proGoal + 'g protein';
     document.title = name ? name + 'Fuel Log' : 'Fuel Log';
     updateDayUI();
+    updateStickyTop();
   }
   function populateSettingsForm(s) {
     const hasKey = !!getApiKey();
@@ -820,6 +870,7 @@
         <span class="day-tab-dot">${dot}</span>
       </button>`;
     }).join('');
+    renderStickyDayTabs();
   }
 
   function changeWeek(dir) {
@@ -906,6 +957,10 @@
     });
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + tab).classList.add('active');
+    if (tab !== 'today') {
+      document.getElementById('stickySubHeader').style.display = 'none';
+      document.getElementById('stickyProgress').style.display = 'none';
+    }
     if (tab === 'today') { renderDayNav(); updateDayUI(); }
     if (tab === 'week') renderWeek();
     if (tab === 'weight') renderWeight();
@@ -972,6 +1027,7 @@
     }
 
     document.getElementById('resetBtn').style.display = (!locked && !isFuture && log.length > 0) ? 'block' : 'none';
+    updateStickyProgress();
   }
 
   function deleteEntry(i) {
@@ -1226,6 +1282,101 @@ If the user references a previous meal (e.g. "same breakfast as yesterday"), use
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); logFood(); }
   });
 
+  // ---- STICKY SUB-HEADER ----
+  function updateStickyTop() {
+    const headerH = document.querySelector('header').offsetHeight;
+    document.getElementById('stickySubHeader').style.top = headerH + 'px';
+  }
+
+  function renderStickyDayTabs() {
+    const dates = getWeekDatesForOffset(currentWeekOffset);
+    const todayStr = today();
+    const dayNames = ['M','T','W','T','F','S','S'];
+    document.getElementById('stickyDayTabs').innerHTML = dates.map((date, i) => {
+      const isFuture = date > todayStr;
+      const isToday = date === todayStr;
+      const locked = isDayLocked(date);
+      const hasData = loadLog(date).length > 0;
+      const isSelected = date === selectedDate;
+      const isPast = !isToday && !isFuture;
+      const unlocked_past = isPast && hasData && !locked;
+      let cls = 'day-tab';
+      if (isSelected) cls += ' active';
+      if (isToday) cls += ' is-today';
+      if (locked) cls += ' locked';
+      else if (unlocked_past) cls += ' unlocked-past';
+      else if (hasData) cls += ' has-data';
+      const dot = locked ? '✓' : (unlocked_past ? '⚠' : (hasData ? '●' : ''));
+      return `<button class="${cls}" onclick="selectDay('${date}')" ${isFuture ? 'disabled' : ''}>
+        <span class="day-tab-name">${dayNames[i]}</span>
+        <span class="day-tab-dot">${dot}</span>
+      </button>`;
+    }).join('');
+  }
+
+  function updateStickyProgress() {
+    const s = loadSettings();
+    const log = currentDayLog;
+    const totalCal = log.reduce((a, e) => a + e.calories, 0);
+    const totalPro = log.reduce((a, e) => a + e.protein_g, 0);
+    const calLeft = s.calGoal - totalCal;
+    const over = totalCal > s.calGoal;
+    const calPct = Math.min((totalCal / s.calGoal) * 100, 100);
+    const proPct = Math.min((totalPro / s.proGoal) * 100, 100);
+    const calColor = over ? 'var(--danger)' : 'var(--accent)';
+    document.getElementById('stickyCalVal').textContent = totalCal.toLocaleString() + ' cal';
+    document.getElementById('stickyCalVal').style.color = calColor;
+    document.getElementById('stickyCalLeft').textContent = calLeft >= 0
+      ? calLeft.toLocaleString() + ' left' : Math.abs(calLeft).toLocaleString() + ' over';
+    document.getElementById('stickyCalFill').style.width = calPct + '%';
+    document.getElementById('stickyCalFill').style.background = calColor;
+    document.getElementById('stickyProVal').textContent = totalPro + 'g protein';
+    const proLeft = s.proGoal - totalPro;
+    document.getElementById('stickyProLeft').textContent = proLeft >= 0
+      ? proLeft + 'g left' : Math.abs(proLeft) + 'g over';
+    document.getElementById('stickyProFill').style.width = proPct + '%';
+  }
+
+  let _weekNavObs = null, _ringObs = null;
+
+  function setupStickyObservers() {
+    function isTodayActive() {
+      return document.getElementById('page-today').classList.contains('active');
+    }
+    const hdr = document.getElementById('stickySubHeader');
+    const prog = document.getElementById('stickyProgress');
+
+    if (_weekNavObs) _weekNavObs.disconnect();
+    if (_ringObs) _ringObs.disconnect();
+
+    _weekNavObs = new IntersectionObserver(entries => {
+      if (!isTodayActive()) return;
+      const visible = entries[0].isIntersecting;
+      if (!visible) {
+        hdr.style.display = 'block';
+        renderStickyDayTabs();
+        updateStickyTop();
+      } else {
+        hdr.style.display = 'none';
+        prog.style.display = 'none';
+      }
+    }, { threshold: 0 });
+
+    _ringObs = new IntersectionObserver(entries => {
+      if (!isTodayActive()) return;
+      const visible = entries[0].isIntersecting;
+      if (!visible) {
+        prog.style.display = 'block';
+        updateStickyProgress();
+      } else {
+        prog.style.display = 'none';
+      }
+    }, { threshold: 0 });
+
+    _weekNavObs.observe(document.getElementById('weekNav'));
+    _ringObs.observe(document.querySelector('.ring-wrap'));
+  }
+
   // ---- WEEK TAB ----
   function changeWeekTab(dir) {
     const newOffset = weekTabOffset + dir;
@@ -1421,6 +1572,8 @@ If the user references a previous meal (e.g. "same breakfast as yesterday"), use
   applySettings(loadSettings());
   renderDayNav();
   updateDayUI();
+  setupStickyObservers();
+  updateStickyTop();
 </script>
 </body>
 </html>
