@@ -1423,7 +1423,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   }
   function applySettings(s) {
     const name = s.name ? s.name + "'s " : '';
-    document.getElementById('headerSubtitle').textContent =
+    document.getElementById('headerSubtitle').textContent 
       s.startWeight + ' → ' + s.goalWeight + ' lbs  ·  ' + s.calGoal.toLocaleString() + ' cal  ·  ' + s.proGoal + 'g protein';
     document.title = name ? name + 'Fuel Log' : 'Fuel Log';
     updateDayUI();
@@ -2467,4 +2467,24 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     const temp = sessionStorage.getItem('fuelApiKeyTemp');
     if (temp) { localStorage.setItem('fuelApiKey', temp); sessionStorage.removeItem('fuelApiKeyTemp'); }
     if (window.location.search.startsWith('?v=')) history.replaceState(null, '', window.location.pathname);
-    const fromVersion = 
+    const fromVersion = sessionStorage.getItem('fuelUpdateFromVersion');
+    if (fromVersion) {
+      sessionStorage.removeItem('fuelUpdateFromVersion');
+      setTimeout(function() {
+        if (fromVersion === APP_VERSION) showToast('Already up to date (' + APP_VERSION + ')');
+        else showToast('Updated to ' + APP_VERSION + ' ✓');
+      }, 400);
+    }
+  })();
+
+  // ---- INIT ----
+  setupPWA();
+  document.getElementById('versionBadge').textContent = APP_VERSION;
+  applySettings(loadSettings());
+  renderDayNav();
+  updateDayUI();
+  setupStickyObservers();
+  updateStickyTop();
+</script>
+</body>
+</html>
