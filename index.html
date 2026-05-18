@@ -87,7 +87,7 @@
   /* ── PAGES ── */
   .page { display: none; padding: 12px 20px 16px; }
   .page.active { display: block; }
-  #page-today { padding-bottom: 200px; } /* extra clearance for fixed input section */
+  #page-today { padding-bottom: 80px; } /* tab bar only — sheet floats above */
 
   /* ── SECTION LABEL ── */
   .section-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 10px; }
@@ -193,16 +193,125 @@
   }
   .mpill.sel { background: var(--accent-dim); border-color: rgba(52,211,153,0.25); color: var(--accent); }
 
-  /* ── FOOD INPUT (fixed bottom) ── */
-  #foodInputSection {
+  /* ── LOG SHEET ── */
+  #logSheetOverlay {
+    position: fixed; inset: 0; z-index: 44;
+    background: rgba(0,0,0,0.55); display: none;
+  }
+  #logSheetOverlay.open { display: block; }
+  #logSheet {
     position: fixed;
     bottom: calc(53px + env(safe-area-inset-bottom));
     left: 0; right: 0; z-index: 45;
     background: var(--surface);
-    border-top: 1.5px solid rgba(255,255,255,0.12);
     border-radius: 14px 14px 0 0;
-    padding: 10px 20px 8px;
+    border-top: 1.5px solid rgba(255,255,255,0.1);
+    transform: translateY(100%);
+    transition: transform 0.28s ease;
+    max-height: 85vh; overflow-y: auto;
   }
+  #logSheet.open { transform: translateY(0); }
+  .sheet-hdr {
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--surface); z-index: 1;
+  }
+  .sheet-hdr-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+  .sheet-meal-chip {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--surface2); border-radius: 20px;
+    padding: 5px 10px 5px 8px; border: none; cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+  .sheet-meal-chip span { color: var(--text); font-size: 13px; font-weight: 500; }
+  .sheet-close-btn {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--surface2); border: none; color: var(--muted);
+    font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sheet-meal-pills { display: flex; gap: 5px; margin-bottom: 9px; overflow-x: auto; }
+  .sheet-mpill {
+    padding: 4px 11px; border-radius: 20px; border: none;
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+    background: var(--surface2); color: var(--muted);
+  }
+  .sheet-mpill.sel { background: var(--accent-dim); color: var(--accent); }
+  .sheet-tabs { display: flex; gap: 5px; }
+  .sheet-tab-btn {
+    flex: 1; padding: 6px; border-radius: 8px; border: none;
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+    cursor: pointer; background: var(--surface2); color: var(--muted);
+    transition: background 0.15s, color 0.15s;
+  }
+  .sheet-tab-btn.sel { background: var(--accent); color: #0C0C0E; }
+  .sheet-body { padding: 12px 16px 16px; }
+  .sheet-analyze-btn {
+    background: var(--accent); color: #0C0C0E; border: none;
+    border-radius: var(--r); font-family: 'Inter', sans-serif;
+    font-size: 15px; font-weight: 700; padding: 13px;
+    cursor: pointer; width: 100%; transition: opacity 0.2s;
+  }
+  .sheet-analyze-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .sheet-item-card {
+    background: var(--surface2); border-radius: var(--r-sm);
+    padding: 10px 12px; margin-bottom: 8px;
+  }
+  .sheet-item-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .sheet-item-meta { font-size: 11px; color: var(--muted); }
+  .sheet-food-row {
+    background: var(--surface2); border-radius: var(--r-sm);
+    padding: 10px 12px; margin-bottom: 7px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sheet-food-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .sheet-food-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .sheet-food-meal-tag {
+    font-size: 10px; color: var(--muted); background: var(--surface);
+    border-radius: 10px; padding: 2px 7px; margin-left: 5px; vertical-align: middle;
+  }
+  .sheet-food-add-btn {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    background: var(--accent-dim); border: none; color: var(--accent);
+    font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sheet-commit-btn {
+    background: var(--accent); color: #0C0C0E; border: none;
+    border-radius: var(--r); font-family: 'Inter', sans-serif;
+    font-size: 14px; font-weight: 700; padding: 12px;
+    cursor: pointer; flex: 1; transition: opacity 0.2s;
+  }
+  .sheet-retry-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--muted); border-radius: var(--r);
+    font-family: 'Inter', sans-serif; font-size: 13px;
+    padding: 12px 16px; cursor: pointer;
+  }
+  .sheet-empty {
+    background: var(--surface2); border-radius: var(--r);
+    padding: 20px 16px; text-align: center;
+  }
+  .sheet-empty-text { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+  .sheet-empty-cta {
+    background: var(--accent-dim); border: none; color: var(--accent);
+    border-radius: var(--r); padding: 10px 16px;
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; width: 100%; margin-bottom: 8px; display: block;
+  }
+  .sheet-show-all-link {
+    background: none; border: none; color: var(--accent2);
+    font-size: 12px; cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .sheet-filter-row { display: flex; gap: 5px; overflow-x: auto; margin-bottom: 10px; padding-bottom: 2px; }
+  .sheet-filter-pill {
+    padding: 4px 11px; border-radius: 20px; border: none;
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600;
+    cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    background: var(--surface2); color: var(--muted);
+  }
+  .sheet-filter-pill.sel { background: var(--accent-dim); color: var(--accent); }
   /* ── PHOTO INPUT ── */
   .photo-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .photo-thumb { position: relative; width: 68px; height: 68px; flex-shrink: 0; }
@@ -753,27 +862,6 @@
   <div id="dayLockSection"></div>
   <button class="reset-btn" id="resetBtn" onclick="resetDay()" style="display:none">↺ Reset day's log</button>
 
-  <!-- Food input -->
-  <div id="foodInputSection">
-    <div class="meal-pills" id="mealPills">
-      <button class="mpill sel" onclick="selectMeal('breakfast')">Breakfast</button>
-      <button class="mpill" onclick="selectMeal('lunch')">Lunch</button>
-      <button class="mpill" onclick="selectMeal('dinner')">Dinner</button>
-      <button class="mpill" onclick="selectMeal('snack')">Snacks</button>
-    </div>
-    <div class="photo-hint" id="photoHint"></div>
-    <div class="photo-grid" id="photoGrid" style="display:none"></div>
-    <div class="input-row">
-      <textarea id="foodInput" placeholder="Describe what you ate, or snap a photo…"></textarea>
-      <button class="photo-btn" id="photoBtn" onclick="document.getElementById('photoInput').click()" title="Camera or photo library">
-        <i class="ti ti-camera" aria-hidden="true"></i>
-      </button>
-    </div>
-    <button class="log-btn" id="logBtn" onclick="logFood()">Log</button>
-    <input type="file" id="photoInput" accept="image/*" multiple onchange="handlePhoto(event)" style="display:none" />
-  </div>
-
-  <div id="aiResponse"></div>
 </div>
 
 <!-- WEEK -->
@@ -848,6 +936,51 @@
   </div>
 </div>
 
+<!-- LOG SHEET OVERLAY -->
+<div id="logSheetOverlay" onclick="closeLogSheet()"></div>
+
+<!-- LOG SHEET -->
+<div id="logSheet" role="dialog" aria-modal="true" aria-label="Log food">
+  <div class="sheet-hdr">
+    <div class="sheet-hdr-row">
+      <button class="sheet-meal-chip" id="sheetMealChip" onclick="toggleSheetMealPills()" aria-label="Change meal">
+        <i class="ti" id="sheetMealIcon" aria-hidden="true" style="font-size:14px"></i>
+        <span id="sheetMealLabel">Dinner</span>
+        <i class="ti ti-chevron-down" aria-hidden="true" style="font-size:11px;color:var(--muted)"></i>
+      </button>
+      <button class="sheet-close-btn" onclick="closeLogSheet()" aria-label="Close">&#215;</button>
+    </div>
+    <div class="sheet-meal-pills" id="sheetMealPills" style="display:none"></div>
+    <div class="sheet-tabs">
+      <button class="sheet-tab-btn sel" id="sheetTabDescribe" onclick="setSheetView('describe')">Describe</button>
+      <button class="sheet-tab-btn" id="sheetTabMyFoods" onclick="setSheetView('myfoods')">My Foods</button>
+    </div>
+  </div>
+  <div class="sheet-body">
+    <!-- Describe view -->
+    <div id="sheetDescribeView">
+      <div class="photo-hint" id="sheetPhotoHint"></div>
+      <div class="photo-grid" id="sheetPhotoGrid" style="display:none"></div>
+      <div class="input-row" style="margin-bottom:8px">
+        <textarea id="sheetInput" placeholder="Describe what you ate, or snap a photo…"></textarea>
+        <button class="photo-btn" id="sheetPhotoBtn" onclick="document.getElementById('sheetPhotoInput').click()" title="Camera or photo library">
+          <i class="ti ti-camera" aria-hidden="true"></i>
+        </button>
+      </div>
+      <button class="sheet-analyze-btn" id="sheetAnalyzeBtn" onclick="analyzeSheet()">Analyze</button>
+      <input type="file" id="sheetPhotoInput" accept="image/*" multiple onchange="handleSheetPhoto(event)" style="display:none" />
+      <div id="sheetItems" style="display:none;margin-top:12px"></div>
+      <div id="sheetBlurb" style="display:none;margin-top:8px"></div>
+      <div id="sheetActions" style="display:none;margin-top:10px;gap:8px"></div>
+    </div>
+    <!-- My Foods view -->
+    <div id="sheetMyFoodsView" style="display:none">
+      <div class="sheet-filter-row" id="sheetFoodPills"></div>
+      <div id="sheetFoodList"></div>
+    </div>
+  </div>
+</div>
+
 <!-- BOTTOM TAB BAR -->
 <nav class="tab-bar">
   <button class="tab-item active" onclick="switchTab('today')">
@@ -874,7 +1007,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.3.0';
+  const APP_VERSION = 'v2.4.0';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1227,15 +1360,6 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   }
 
   // ---- MEAL STATE ----
-  let selectedMeal = 'breakfast';
-
-  function selectMeal(key) {
-    selectedMeal = key;
-    document.querySelectorAll('.mpill').forEach((p, i) => {
-      p.classList.toggle('sel', MEALS[i].key === key);
-    });
-    document.getElementById('foodInput').focus();
-  }
 
   // ---- PWA SETUP ----
   function setupPWA() {
@@ -1345,7 +1469,13 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   let currentWeekOffset = 0;
   let weekTabOffset = 0;
   let currentDayLog = loadLog(selectedDate);
-  let pendingImages = [];
+  let sheetImages = [];
+  let sheetParsedItems = [];
+  let sheetMeal = 'breakfast';
+  let sheetMealPillsOpen = false;
+  let sheetViewMode = 'describe';
+  let sheetFoodFilter = 'breakfast';
+  let sheetAnalyzed = false;
 
   // ---- DAY NAV ----
   function renderDayNav() {
@@ -1471,7 +1601,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
           <span class="meal-subtotal-text"><strong>${totalCal.toLocaleString()} cal</strong> · <strong>${totalPro}g</strong> protein</span>
         </div>` : '';
 
-      const addBtn = (!locked && !isFuture) ? `<button class="meal-add-btn" onclick="selectMeal('${m.key}');document.getElementById('foodInput').scrollIntoView({behavior:'smooth',block:'nearest'})" aria-label="Add to ${m.label}"><i class="ti ti-plus" aria-hidden="true"></i></button>` : '';
+      const addBtn = (!locked && !isFuture) ? `<button class="meal-add-btn" onclick="openLogSheet('${m.key}')" aria-label="Add to ${m.label}"><i class="ti ti-plus" aria-hidden="true"></i></button>` : '';
 
       return `<div class="meal-section" data-meal="${m.key}">
         <div class="meal-hdr${hasItems ? ' has-items' : ''}">
@@ -1493,6 +1623,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + tab).classList.add('active');
     if (tab !== 'today') {
+      closeLogSheet();
       document.getElementById('stickySubHeader').style.display = 'none';
       document.getElementById('stickyProgress').style.display = 'none';
     }
@@ -1548,9 +1679,6 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     // Meal sections
     document.getElementById('mealSections').innerHTML = renderMealSections(log, locked, isFuture);
 
-    // Food input visibility
-    document.getElementById('foodInputSection').style.display = (locked || isFuture) ? 'none' : 'block';
-
     // Lock section
     const lockSection = document.getElementById('dayLockSection');
     if (locked) {
@@ -1581,8 +1709,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   function resetDay() {
     if (confirm('Clear the entire log for ' + formatDateNice(selectedDate) + '?')) {
       currentDayLog = []; saveLog(selectedDate, currentDayLog);
-      updateDayUI(); renderDayNav(); clearPhoto();
-      document.getElementById('aiResponse').innerHTML = '';
+      updateDayUI(); renderDayNav(); closeLogSheet();
     }
   }
 
@@ -1605,37 +1732,224 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     img.src = dataURL;
   }
 
-  function renderPhotoGrid() {
-    const grid = document.getElementById('photoGrid');
-    const hint = document.getElementById('photoHint');
-    const btn = document.getElementById('photoBtn');
-    if (pendingImages.length === 0) {
-      grid.style.display = 'none'; hint.style.display = 'none'; btn.classList.remove('has-photo'); return;
+
+  // ---- LOG SHEET ----
+
+  function openLogSheet(meal) {
+    sheetMeal = meal || 'breakfast';
+    sheetImages = [];
+    sheetParsedItems = [];
+    sheetMealPillsOpen = false;
+    sheetAnalyzed = false;
+    sheetViewMode = 'describe';
+    sheetFoodFilter = sheetMeal;
+    updateSheetMealChip();
+    // Reset to describe view (input phase)
+    const descView = document.getElementById('sheetDescribeView');
+    const sfView = document.getElementById('sheetMyFoodsView');
+    const tabD = document.getElementById('sheetTabDescribe');
+    const tabS = document.getElementById('sheetTabMyFoods');
+    if (descView) descView.style.display = 'block';
+    if (sfView) sfView.style.display = 'none';
+    if (tabD) { tabD.classList.add('sel'); }
+    if (tabS) { tabS.classList.remove('sel'); }
+    const sheetInput = document.getElementById('sheetInput');
+    if (sheetInput) sheetInput.value = '';
+    const sheetItems = document.getElementById('sheetItems');
+    if (sheetItems) { sheetItems.style.display = 'none'; sheetItems.innerHTML = ''; }
+    const sheetBlurb = document.getElementById('sheetBlurb');
+    if (sheetBlurb) { sheetBlurb.style.display = 'none'; }
+    const sheetActions = document.getElementById('sheetActions');
+    if (sheetActions) { sheetActions.style.display = 'none'; }
+    renderSheetPhotoGrid();
+    document.getElementById('logSheetOverlay').classList.add('open');
+    document.getElementById('logSheet').classList.add('open');
+    setTimeout(() => { const inp = document.getElementById('sheetInput'); if (inp) inp.focus(); }, 320);
+  }
+
+  function closeLogSheet() {
+    document.getElementById('logSheetOverlay').classList.remove('open');
+    document.getElementById('logSheet').classList.remove('open');
+    sheetImages = [];
+    sheetParsedItems = [];
+    sheetAnalyzed = false;
+    sheetMealPillsOpen = false;
+    const inp = document.getElementById('sheetInput');
+    if (inp) inp.value = '';
+    const pills = document.getElementById('sheetMealPills');
+    if (pills) pills.style.display = 'none';
+    renderSheetPhotoGrid();
+  }
+
+  function updateSheetMealChip() {
+    const m = MEALS.find(x => x.key === sheetMeal) || MEALS[0];
+    const icon = document.getElementById('sheetMealIcon');
+    const label = document.getElementById('sheetMealLabel');
+    if (icon) { icon.className = 'ti ' + m.tiIcon; icon.style.color = m.iconColor; }
+    if (label) label.textContent = m.label;
+    const commitBtn = document.getElementById('sheetCommitBtn');
+    if (commitBtn) commitBtn.textContent = 'Add to ' + m.label;
+  }
+
+  function toggleSheetMealPills() {
+    sheetMealPillsOpen = !sheetMealPillsOpen;
+    const pills = document.getElementById('sheetMealPills');
+    if (!pills) return;
+    if (sheetMealPillsOpen) {
+      pills.style.display = 'flex';
+      pills.innerHTML = MEALS.map(m =>
+        `<button class="sheet-mpill${m.key === sheetMeal ? ' sel' : ''}" onclick="selectSheetMeal('${m.key}')">${m.label}</button>`
+      ).join('');
+    } else {
+      pills.style.display = 'none';
     }
-    grid.style.display = 'flex'; hint.style.display = 'block';
-    hint.textContent = pendingImages.length === 1 ? '📷 1 photo ready — add a note or just hit Log' : '📷 ' + pendingImages.length + ' photos ready';
-    btn.classList.add('has-photo');
-    grid.innerHTML = pendingImages.map((img, i) =>
+  }
+
+  function selectSheetMeal(key) {
+    sheetMeal = key;
+    sheetMealPillsOpen = false;
+    const pills = document.getElementById('sheetMealPills');
+    if (pills) pills.style.display = 'none';
+    updateSheetMealChip();
+    if (sheetViewMode === 'myfoods' && sheetFoodFilter !== 'all') {
+      sheetFoodFilter = key;
+      renderSheetFoods();
+    }
+  }
+
+  function setSheetView(view) {
+    sheetViewMode = view;
+    const descView = document.getElementById('sheetDescribeView');
+    const sfView = document.getElementById('sheetMyFoodsView');
+    const tabD = document.getElementById('sheetTabDescribe');
+    const tabS = document.getElementById('sheetTabMyFoods');
+    if (view === 'describe') {
+      if (descView) descView.style.display = 'block';
+      if (sfView) sfView.style.display = 'none';
+      if (tabD) tabD.classList.add('sel');
+      if (tabS) tabS.classList.remove('sel');
+      const inp = document.getElementById('sheetInput');
+      if (inp) inp.focus();
+    } else {
+      if (descView) descView.style.display = 'none';
+      if (sfView) sfView.style.display = 'block';
+      if (tabD) tabD.classList.remove('sel');
+      if (tabS) tabS.classList.add('sel');
+      sheetFoodFilter = sheetMeal;
+      renderSheetFoods();
+    }
+  }
+
+  function renderSheetFoods() {
+    const allFoods = loadSavedFoods();
+    const pillsEl = document.getElementById('sheetFoodPills');
+    const listEl = document.getElementById('sheetFoodList');
+    if (!pillsEl || !listEl) return;
+    const filterOptions = [...MEALS, { key: 'all', label: 'All' }];
+    pillsEl.innerHTML = filterOptions.map(m =>
+      `<button class="sheet-filter-pill${m.key === sheetFoodFilter ? ' sel' : ''}" onclick="setSheetFoodFilter('${m.key}')">${m.label}</button>`
+    ).join('');
+    const filtered = sheetFoodFilter === 'all' ? allFoods : allFoods.filter(f => f.meal === sheetFoodFilter);
+    if (filtered.length === 0) {
+      if (sheetFoodFilter === 'all') {
+        listEl.innerHTML = `<div class="sheet-empty">
+          <i class="ti ti-bookmark" aria-hidden="true" style="font-size:28px;color:var(--border);display:block;margin-bottom:8px"></i>
+          <div class="sheet-empty-text">No saved foods yet</div>
+          <button class="sheet-empty-cta" onclick="closeLogSheet();switchTab('myfoods')">Go to My Foods to add items</button>
+        </div>`;
+      } else {
+        const mealLabel = (MEALS.find(m => m.key === sheetFoodFilter) || {}).label || sheetFoodFilter;
+        listEl.innerHTML = `<div class="sheet-empty">
+          <i class="ti ti-bookmark" aria-hidden="true" style="font-size:28px;color:var(--border);display:block;margin-bottom:8px"></i>
+          <div class="sheet-empty-text">No ${mealLabel.toLowerCase()} items saved yet</div>
+          <button class="sheet-empty-cta" onclick="closeLogSheet();switchTab('myfoods')">Go to My Foods to add items</button>
+          <button class="sheet-show-all-link" onclick="setSheetFoodFilter('all')">Show all meals instead</button>
+        </div>`;
+      }
+      return;
+    }
+    listEl.innerHTML = filtered.map(f => {
+      const showTag = sheetFoodFilter === 'all';
+      const mealLabel = (MEALS.find(m => m.key === f.meal) || {}).label || f.meal;
+      const tag = showTag ? `<span class="sheet-food-meal-tag">${mealLabel}</span>` : '';
+      return `<div class="sheet-food-row">
+        <div style="flex:1">
+          <div class="sheet-food-name">${escHtml(f.name)}${tag}</div>
+          <div class="sheet-food-meta">${escHtml(f.serving_size)} · ${f.calories} cal · ${f.protein_g}g protein</div>
+        </div>
+        <button class="sheet-food-add-btn" onclick="commitSavedFood('${f.id}')" aria-label="Add ${escHtml(f.name)}">+</button>
+      </div>`;
+    }).join('');
+  }
+
+  function setSheetFoodFilter(key) {
+    sheetFoodFilter = key;
+    renderSheetFoods();
+  }
+
+  function commitSavedFood(id) {
+    const food = loadSavedFoods().find(f => f.id === id);
+    if (!food) return;
+    currentDayLog.push({
+      name: food.name, calories: food.calories, protein_g: food.protein_g,
+      note: food.serving_size, meal: sheetMeal,
+      quantity: 1, quantity_unit: food.serving_size,
+      cal_per_unit: food.calories, protein_per_unit: food.protein_g
+    });
+    saveLog(selectedDate, currentDayLog);
+    updateDayUI(); renderDayNav();
+    const mealLabel = (MEALS.find(m => m.key === sheetMeal) || {}).label || sheetMeal;
+    showToast(food.name + ' added to ' + mealLabel);
+    const targetMeal = sheetMeal;
+    closeLogSheet();
+    setTimeout(() => {
+      const el = document.querySelector(`[data-meal="${targetMeal}"]`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 150);
+  }
+
+  // ---- SHEET PHOTO ----
+
+  function renderSheetPhotoGrid() {
+    const grid = document.getElementById('sheetPhotoGrid');
+    const hint = document.getElementById('sheetPhotoHint');
+    const btn = document.getElementById('sheetPhotoBtn');
+    if (!grid) return;
+    if (sheetImages.length === 0) {
+      grid.style.display = 'none';
+      if (hint) hint.style.display = 'none';
+      if (btn) btn.classList.remove('has-photo');
+      return;
+    }
+    grid.style.display = 'flex';
+    if (hint) {
+      hint.style.display = 'block';
+      hint.textContent = sheetImages.length === 1
+        ? '📷 1 photo ready — add a note or hit Analyze'
+        : '📷 ' + sheetImages.length + ' photos ready';
+    }
+    if (btn) btn.classList.add('has-photo');
+    grid.innerHTML = sheetImages.map((img, i) =>
       `<div class="photo-thumb">
         <img src="${img.previewURL}" alt="Photo ${i+1}" />
-        <button class="photo-thumb-clear" onclick="clearSinglePhoto(${i})">&#215;</button>
+        <button class="photo-thumb-clear" onclick="clearSingleSheetPhoto(${i})">&#215;</button>
       </div>`).join('');
   }
 
-  function handlePhoto(event) {
+  function handleSheetPhoto(event) {
     const files = Array.from(event.target.files);
     if (!files.length) return;
     const MAX_PHOTOS = 5;
-    const remaining = MAX_PHOTOS - pendingImages.length;
-    if (remaining <= 0) { showToast('Max 5 photos per log'); event.target.value = ''; return; }
+    const remaining = MAX_PHOTOS - sheetImages.length;
+    if (remaining <= 0) { showToast('Max 5 photos per entry'); event.target.value = ''; return; }
     const toAdd = files.slice(0, remaining);
     if (files.length > remaining) showToast('Max 5 photos — added ' + remaining);
     toAdd.forEach(file => {
       const reader = new FileReader();
       reader.onload = e => {
         compressImage(e.target.result, (data, mediaType) => {
-          pendingImages.push({ data, mediaType, previewURL: e.target.result });
-          renderPhotoGrid();
+          sheetImages.push({ data, mediaType, previewURL: e.target.result });
+          renderSheetPhotoGrid();
         });
       };
       reader.readAsDataURL(file);
@@ -1643,24 +1957,26 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     event.target.value = '';
   }
 
-  function clearSinglePhoto(i) { pendingImages.splice(i, 1); renderPhotoGrid(); }
-  function clearPhoto() { pendingImages = []; renderPhotoGrid(); }
+  function clearSingleSheetPhoto(i) { sheetImages.splice(i, 1); renderSheetPhotoGrid(); }
 
-  // ---- LOG FOOD ----
-  async function logFood() {
+  // ---- ANALYZE SHEET ----
+
+  async function analyzeSheet() {
     const s = loadSettings();
-    const input = document.getElementById('foodInput');
-    const btn = document.getElementById('logBtn');
-    const text = input.value.trim();
-    if (!text && pendingImages.length === 0) return;
-    if (!getApiKey()) {
-      document.getElementById('aiResponse').innerHTML = '<div class="ai-bubble" style="border-left-color:var(--danger)"><div class="ai-label" style="color:var(--danger)">Setup needed</div>Go to Settings and enter your Anthropic API key first.</div>';
-      return;
-    }
+    const input = document.getElementById('sheetInput');
+    const btn = document.getElementById('sheetAnalyzeBtn');
+    const text = input ? input.value.trim() : '';
+    if (!text && sheetImages.length === 0) return;
+    if (!getApiKey()) { showToast('Add your API key in Settings first'); return; }
     btn.disabled = true;
-    document.getElementById('aiResponse').innerHTML = '<div class="loading">Analyzing' + (pendingImages.length > 0 ? (pendingImages.length > 1 ? ' ' + pendingImages.length + ' photos' : ' photo') : '') + '…</div>';
+    const itemsEl = document.getElementById('sheetItems');
+    const blurbEl = document.getElementById('sheetBlurb');
+    const actionsEl = document.getElementById('sheetActions');
+    itemsEl.style.display = 'block';
+    itemsEl.innerHTML = '<div class="loading">Analyzing' + (sheetImages.length > 0 ? (sheetImages.length > 1 ? ' ' + sheetImages.length + ' photos' : ' photo') : '') + '…</div>';
+    blurbEl.style.display = 'none';
+    actionsEl.style.display = 'none';
 
-    // Build yesterday's meal context for lookbacks ("same breakfast as yesterday")
     const prevDate = (() => {
       const d = new Date(selectedDate + 'T12:00:00');
       d.setDate(d.getDate() - 1);
@@ -1671,78 +1987,113 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     if (prevLog.length > 0) {
       MEALS.forEach(m => {
         const items = prevLog.filter(e => (e.meal || 'snack') === m.key);
-        if (items.length > 0) {
+        if (items.length > 0)
           mealContext += '\n- ' + m.label + ': ' + items.map(e => `${e.name} (${e.calories} cal, ${e.protein_g}g protein)`).join('; ');
-        }
       });
     }
+    const mealLabel = (MEALS.find(m => m.key === sheetMeal) || {}).label || 'meal';
+    const systemPrompt = `You are a nutrition logging assistant. The user is logging food for ${mealLabel}.${mealContext ? '\n\nYesterday\'s meals for context:\n' + mealContext : ''}\n\nRespond with JSON ONLY. No markdown, no backticks.\nFormat: {"items":[{"name":"...","calories":number,"protein_g":number,"note":"...","quantity":number,"quantity_unit":"...","cal_per_unit":number,"protein_per_unit":number}],"response":"1–2 sentence comment"}\nEach item must have all fields. quantity_unit describes the portion (e.g. \"serving\", \"oz\", \"cup\"). cal_per_unit and protein_per_unit equal calories/protein_g when quantity is 1.`;
 
-    const mealLabel = MEALS.find(m => m.key === selectedMeal)?.label || 'meal';
-
-    const systemPrompt = `You are a nutrition assistant. This person's daily goals:
-- Calories: ${s.calGoal} cal/day
-- Protein: ${s.proGoal}g/day
-- Maintenance: ~${s.maintenance} cal/day
-- Currently logging: ${mealLabel}${mealContext ? `\n\nPrevious day's meals for reference (${formatDateShort(prevDate)}):\n${mealContext}` : ''}
-
-Respond with JSON ONLY. No markdown, no backticks.
-Format: {"items":[{"name":"Food name","calories":number,"protein_g":number,"note":"brief note","quantity":number,"quantity_unit":"unit (eggs, slices, cups, oz, g, serving)","cal_per_unit":number,"protein_per_unit":number}],"response":"1-2 sentence comment. If photo, note it's a visual estimate. Flag low protein foods."}
-Always include quantity, quantity_unit, cal_per_unit, and protein_per_unit. calories must equal quantity × cal_per_unit. protein_g must equal quantity × protein_per_unit.
-For images: identify foods, estimate portions from context, estimate macros.
-If the user references a previous meal (e.g. "same breakfast as yesterday"), use the provided meal history to look it up accurately and replicate those exact items.`;
-
-    const userContent = pendingImages.length > 0
-      ? [...pendingImages.map(img => ({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } })),
-         { type: 'text', text: text || 'What did I eat? Estimate calories and protein for everything shown.' }]
+    const userContent = sheetImages.length > 0
+      ? [...sheetImages.map(img => ({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } })),
+         { type: 'text', text: text || 'What food is shown? Estimate calories and protein.' }]
       : text;
 
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': getApiKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: systemPrompt, messages: [{ role: 'user', content: userContent }] })
+        headers: {
+          'x-api-key': getApiKey(),
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6', max_tokens: 1024,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userContent }]
+        })
       });
       const data = await res.json();
       if (!res.ok) {
-        document.getElementById('aiResponse').innerHTML = '<div class="ai-bubble"><div class="ai-label">Error</div>' + ((data.error && data.error.message) || 'API error ' + res.status) + '</div>';
+        itemsEl.innerHTML = `<div class="ai-bubble" style="border-left-color:var(--danger)"><div class="ai-label" style="color:var(--danger)">Error</div>${(data.error && data.error.message) || 'API error ' + res.status}</div>`;
         btn.disabled = false; return;
       }
-      const rawText = data.content.map(b => b.text || '').join('');
+      const raw = data.content[0].text.trim();
       let parsed;
-      try { parsed = JSON.parse(rawText); }
-      catch { const m = rawText.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : null; }
-      if (parsed && parsed.items) {
-        parsed.items.forEach(item => {
-          const qty = item.quantity || 1;
-          const cal = item.calories || 0;
-          const pro = item.protein_g || 0;
-          currentDayLog.push({
-            name: item.name,
-            calories: cal,
-            protein_g: pro,
-            note: item.note || '',
-            meal: selectedMeal,
-            quantity: qty,
-            quantity_unit: item.quantity_unit || 'serving',
-            cal_per_unit: item.cal_per_unit != null ? item.cal_per_unit : Math.round((cal / qty) * 10) / 10,
-            protein_per_unit: item.protein_per_unit != null ? item.protein_per_unit : Math.round((pro / qty) * 10) / 10,
-          });
-        });
-        saveLog(selectedDate, currentDayLog);
-        updateDayUI(); renderDayNav();
-        input.value = ''; clearPhoto();
-        setTimeout(() => {
-          const el = document.querySelector(`[data-meal="${selectedMeal}"]`);
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 150);
-        document.getElementById('aiResponse').innerHTML = `<div class="ai-bubble"><div class="ai-label">Claude</div>${parsed.response || ''}</div>`;
+      try { parsed = JSON.parse(raw); } catch(e) {
+        const match = raw.match(/\{[\s\S]*\}/);
+        try { parsed = match ? JSON.parse(match[0]) : null; } catch(e2) { parsed = null; }
+      }
+      if (parsed && parsed.items && parsed.items.length > 0) {
+        sheetParsedItems = parsed.items.map(item => ({
+          name: item.name, calories: item.calories, protein_g: item.protein_g,
+          note: item.note || '', meal: sheetMeal,
+          quantity: item.quantity || 1,
+          quantity_unit: item.quantity_unit || 'serving',
+          cal_per_unit: item.cal_per_unit || item.calories,
+          protein_per_unit: item.protein_per_unit || item.protein_g
+        }));
+        sheetAnalyzed = true;
+        renderSheetItems(parsed.response || '');
       } else {
-        document.getElementById('aiResponse').innerHTML = '<div class="ai-bubble"><div class="ai-label">Claude</div>Could not read that — try a clearer photo or describe the food.</div>';
+        itemsEl.innerHTML = '<div class="ai-bubble"><div class="ai-label">Claude</div>Could not read that — try a clearer photo or describe the food.</div>';
       }
     } catch(err) {
-      document.getElementById('aiResponse').innerHTML = '<div class="ai-bubble"><div class="ai-label">Error</div>' + (err && err.message ? err.message : 'Unknown error') + '</div>';
+      itemsEl.innerHTML = `<div class="ai-bubble" style="border-left-color:var(--danger)"><div class="ai-label" style="color:var(--danger)">Error</div>${err && err.message ? err.message : 'Unknown error'}</div>`;
     }
     btn.disabled = false;
+  }
+
+  function renderSheetItems(blurb) {
+    const mealLabel = (MEALS.find(m => m.key === sheetMeal) || {}).label || 'Meal';
+    const itemsEl = document.getElementById('sheetItems');
+    const blurbEl = document.getElementById('sheetBlurb');
+    const actionsEl = document.getElementById('sheetActions');
+    itemsEl.style.display = 'block';
+    itemsEl.innerHTML = sheetParsedItems.map((item) =>
+      `<div class="sheet-item-card">
+        <div class="sheet-item-name">${escHtml(item.name)}</div>
+        <div class="sheet-item-meta">${item.quantity} ${escHtml(item.quantity_unit)} · ${item.calories} cal · ${item.protein_g}g protein</div>
+      </div>`
+    ).join('');
+    if (blurb) {
+      blurbEl.style.display = 'block';
+      blurbEl.innerHTML = `<div class="ai-bubble"><div class="ai-label">Claude</div>${blurb}</div>`;
+    }
+    actionsEl.style.display = 'flex';
+    actionsEl.innerHTML = `
+      <button class="sheet-retry-btn" onclick="retrySheet()">Try again</button>
+      <button class="sheet-commit-btn" id="sheetCommitBtn" onclick="commitSheet()">Add to ${mealLabel}</button>
+    `;
+  }
+
+  function retrySheet() {
+    sheetAnalyzed = false;
+    sheetParsedItems = [];
+    const itemsEl = document.getElementById('sheetItems');
+    const blurbEl = document.getElementById('sheetBlurb');
+    const actionsEl = document.getElementById('sheetActions');
+    if (itemsEl) { itemsEl.style.display = 'none'; itemsEl.innerHTML = ''; }
+    if (blurbEl) blurbEl.style.display = 'none';
+    if (actionsEl) actionsEl.style.display = 'none';
+    const inp = document.getElementById('sheetInput');
+    if (inp) { inp.value = ''; inp.focus(); }
+  }
+
+  function commitSheet() {
+    if (!sheetParsedItems.length) return;
+    sheetParsedItems.forEach(item => {
+      currentDayLog.push({ ...item, meal: sheetMeal });
+    });
+    saveLog(selectedDate, currentDayLog);
+    updateDayUI(); renderDayNav();
+    const targetMeal = sheetMeal;
+    closeLogSheet();
+    setTimeout(() => {
+      const el = document.querySelector(`[data-meal="${targetMeal}"]`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 150);
   }
 
   // ---- EDIT OVERLAY ----
@@ -1817,9 +2168,6 @@ If the user references a previous meal (e.g. "same breakfast as yesterday"), use
     if (e.target === document.getElementById('editOverlay')) closeEditOverlay();
   }
 
-  document.getElementById('foodInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); logFood(); }
-  });
 
   // ---- STICKY SUB-HEADER ----
   function updateStickyTop() {
