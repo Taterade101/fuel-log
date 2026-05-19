@@ -1010,7 +1010,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.5.1';
+  const APP_VERSION = 'v2.5.2';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1445,7 +1445,10 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   }
 
   // ---- CORE ----
-  function today() { return new Date().toISOString().split('T')[0]; }
+  function today() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
 
   function getWeekDatesForOffset(offset) {
     const dates = [], now = new Date();
@@ -1453,7 +1456,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     monday.setDate(now.getDate() - ((now.getDay() + 6) % 7) + (offset * 7));
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday); d.setDate(monday.getDate() + i);
-      dates.push(d.toISOString().split('T')[0]);
+      dates.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
     }
     return dates;
   }
@@ -2485,5 +2488,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   setupStickyObservers();
   updateStickyTop();
 </script>
+</body>
+</html>cript>
 </body>
 </html>
