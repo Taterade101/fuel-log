@@ -1039,7 +1039,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.5.12';
+  const APP_VERSION = 'v2.5.13';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -2628,6 +2628,8 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   setupPWA();
   document.getElementById('versionBadge').textContent = APP_VERSION;
   applySettings();
+  renderDayNav();
+  updateDayUI();
   setupStickyObservers();
   updateStickyTop();
 </script>
