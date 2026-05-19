@@ -240,11 +240,8 @@
     color: var(--accent); font-family: 'Inter', sans-serif;
     font-size: 14px; font-weight: 600; min-width: 64px; padding: 0;
   }
-  #lvMealChip {
-    flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
-    background: none; border: none; cursor: pointer; font-family: 'Inter', sans-serif;
-  }
-  #lvMealChip span { font-size: 15px; font-weight: 700; color: var(--text); }
+  #lvMealChip { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  #lvMealSelect { background: transparent; border: none; outline: none; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); cursor: pointer; padding: 2px 4px; }
   #lvTabs {
     display: flex; margin: 12px 16px 0;
     background: var(--surface2); border-radius: 10px;
@@ -996,11 +993,15 @@
     <button id="lvCancelBtn" onclick="closeLogView()">
       <i class="ti ti-chevron-left" aria-hidden="true"></i>Cancel
     </button>
-    <button id="lvMealChip" onclick="cycleLogMeal()" aria-label="Change meal">
+    <div id="lvMealChip">
       <i class="ti" id="sheetMealIcon" aria-hidden="true" style="font-size:14px"></i>
-      <span id="sheetMealLabel">Lunch</span>
-      <i class="ti ti-chevron-down" aria-hidden="true" style="font-size:11px;color:var(--muted)"></i>
-    </button>
+      <select id="lvMealSelect" onchange="setLogMeal(this.value)">
+        <option value="breakfast">Breakfast</option>
+        <option value="lunch">Lunch</option>
+        <option value="dinner">Dinner</option>
+        <option value="snack">Snacks</option>
+      </select>
+    </div>
     <div style="min-width:64px"></div>
   </div>
   <div id="lvTabs">
@@ -1028,6 +1029,7 @@
           </button>
         </div>
       </div>
+      <button class="lv-primary-btn" id="sheetAnalyzeBtn" onclick="analyzeSheet()" style="margin-top:8px">Analyze</button>
       <input type="file" id="sheetPhotoInput" accept="image/*" multiple onchange="handleSheetPhoto(event)" style="display:none" />
     </div>
     <div id="sheetMyFoodsView" style="display:none">
@@ -1063,7 +1065,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.6.1';
+  const APP_VERSION = 'v2.6.2';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1897,7 +1899,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     updateLvPinned();
     document.getElementById('logView').classList.add('open');
     lockScroll();
-    setTimeout(() => { const i = document.getElementById('sheetInput'); if (i) i.focus(); }, 300);
+    // no auto-focus on open — user taps to open keyboard
   }
 
   function closeLogView() {
@@ -1915,16 +1917,15 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   function updateLvMealChip() {
     const m = MEALS.find(x => x.key === sheetMeal) || MEALS[0];
     const icon = document.getElementById('sheetMealIcon');
-    const label = document.getElementById('sheetMealLabel');
+    const sel = document.getElementById('lvMealSelect');
     const ctx = document.getElementById('lvContextLine');
     if (icon) { icon.className = 'ti ' + m.tiIcon; icon.style.color = m.iconColor; }
-    if (label) label.textContent = m.label;
+    if (sel) sel.value = m.key;
     if (ctx) ctx.textContent = 'What did you have for ' + m.label.toLowerCase() + '?';
   }
 
-  function cycleLogMeal() {
-    const idx = MEALS.findIndex(m => m.key === sheetMeal);
-    sheetMeal = MEALS[(idx + 1) % MEALS.length].key;
+  function setLogMeal(key) {
+    sheetMeal = key;
     updateLvMealChip();
   }
 
@@ -1939,8 +1940,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
       if (sfView) sfView.style.display = 'none';
       if (tabD) tabD.classList.add('sel');
       if (tabS) tabS.classList.remove('sel');
-      const inp = document.getElementById('sheetInput');
-      if (inp) inp.focus();
+      // no auto-focus when switching tabs
     } else {
       if (descView) descView.style.display = 'none';
       if (sfView) sfView.style.display = 'block';
@@ -1954,22 +1954,12 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   function updateLvPinned() {
     const pinned = document.getElementById('lvPinned');
     if (!pinned) return;
-    if (sheetViewMode === 'myfoods') {
-      if (sheetParsedItems.length > 0) {
-        const totalCal = sheetParsedItems.reduce((s, x) => s + x.calories, 0);
-        const n = sheetParsedItems.length;
-        pinned.innerHTML = '<button class="lv-primary-btn" onclick="commitSheet()">Add ' + n + ' item' + (n !== 1 ? 's' : '') + ' · ' + totalCal + ' cal</button>';
-      } else {
-        pinned.innerHTML = '';
-      }
-      return;
-    }
-    if (!sheetAnalyzed || sheetParsedItems.length === 0) {
-      pinned.innerHTML = '<button class="lv-primary-btn" id="sheetAnalyzeBtn" onclick="analyzeSheet()">Analyze</button>';
-    } else {
+    if (sheetParsedItems.length > 0) {
       const totalCal = sheetParsedItems.reduce((s, x) => s + x.calories, 0);
       const n = sheetParsedItems.length;
       pinned.innerHTML = '<button class="lv-primary-btn" onclick="commitSheet()">Add ' + n + ' item' + (n !== 1 ? 's' : '') + ' · ' + totalCal + ' cal</button>';
+    } else {
+      pinned.innerHTML = '';
     }
   }
 
