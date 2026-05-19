@@ -233,13 +233,17 @@
     border-top: 1.5px solid rgba(255,255,255,0.1);
     transform: translateY(100%);
     transition: transform 0.28s ease;
-    height: 54vh; overflow-y: auto;
+    height: 54vh; display: flex; flex-direction: column; overflow: hidden;
   }
   #logSheet.open { transform: translateY(0); }
   .sheet-hdr {
-    padding: 12px 16px 10px;
+    padding: 0 16px 10px;
     border-bottom: 1px solid var(--border);
-    position: sticky; top: 0; background: var(--surface); z-index: 1;
+    flex-shrink: 0;
+  }
+  .sheet-drag-handle {
+    width: 36px; height: 4px; background: var(--border);
+    border-radius: 2px; margin: 10px auto 10px;
   }
   .sheet-hdr-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
   .sheet-meal-chip {
@@ -263,7 +267,10 @@
     background: var(--surface2); color: var(--muted);
   }
   .sheet-mpill.sel { background: var(--accent-dim); color: var(--accent); }
-  .sheet-tabs { display: flex; gap: 5px; }
+  .sheet-tabs-bar {
+    display: flex; gap: 5px; padding: 8px 16px;
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
   .sheet-tab-btn {
     flex: 1; padding: 6px; border-radius: 8px; border: none;
     font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
@@ -271,7 +278,34 @@
     transition: background 0.15s, color 0.15s;
   }
   .sheet-tab-btn.sel { background: var(--accent); color: #0C0C0E; }
-  .sheet-body { padding: 12px 16px 16px; }
+  #sheetClaudeBlock {
+    flex-shrink: 0; margin: 10px 16px 0;
+    background: var(--surface); border-radius: var(--r);
+    border-left: 3px solid var(--accent);
+    padding: 8px 12px; font-size: 13px; line-height: 1.5; color: var(--text);
+  }
+  #sheetClaudeBlock .ai-label { margin-bottom: 3px; }
+  #sheetResultsArea {
+    flex: 1; min-height: 0; overflow-y: auto; padding: 0 16px;
+  }
+  .sheet-result-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0; border-bottom: 1px solid var(--border);
+  }
+  .sheet-result-row:last-child { border-bottom: none; }
+  .sheet-result-info { flex: 1; min-width: 0; }
+  .sheet-result-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .sheet-result-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .sheet-result-del {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    font-size: 14px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; line-height: 1;
+  }
+  #sheetCommitArea { flex-shrink: 0; padding: 8px 16px 0; }
+  #sheetTabContent { flex-shrink: 0; overflow: hidden; }
+  #sheetDescribeView { padding: 10px 16px 12px; }
+  #sheetMyFoodsView { overflow-y: auto; padding: 6px 16px 10px; max-height: 160px; }
   .sheet-analyze-btn {
     background: var(--accent); color: #0C0C0E; border: none;
     border-radius: var(--r); font-family: 'Inter', sans-serif;
@@ -358,6 +392,7 @@
   }
   textarea:focus { border-color: rgba(52,211,153,0.35); }
   textarea::placeholder { color: var(--muted); }
+  #sheetDescribeView textarea { height: 60px; }
   .photo-btn {
     background: var(--surface); border: 1.5px solid var(--border);
     border-radius: var(--r-sm); color: var(--muted); font-size: 18px;
@@ -974,6 +1009,7 @@
 <!-- LOG SHEET -->
 <div id="logSheet" role="dialog" aria-modal="true" aria-label="Log food">
   <div class="sheet-hdr">
+    <div class="sheet-drag-handle"></div>
     <div class="sheet-hdr-row">
       <button class="sheet-meal-chip" id="sheetMealChip" onclick="toggleSheetMealPills()" aria-label="Change meal">
         <i class="ti" id="sheetMealIcon" aria-hidden="true" style="font-size:14px"></i>
@@ -983,17 +1019,26 @@
       <button class="sheet-close-btn" onclick="closeLogSheet()" aria-label="Close">&#215;</button>
     </div>
     <div class="sheet-meal-pills" id="sheetMealPills" style="display:none"></div>
-    <div class="sheet-tabs">
-      <button class="sheet-tab-btn sel" id="sheetTabDescribe" onclick="setSheetView('describe')">Describe</button>
-      <button class="sheet-tab-btn" id="sheetTabMyFoods" onclick="setSheetView('myfoods')">My Foods</button>
-    </div>
   </div>
-  <div class="sheet-body">
-    <!-- Describe view -->
+  <div id="sheetClaudeBlock" style="display:none">
+    <div class="ai-label">Claude</div>
+    <span id="sheetClaudeText"></span>
+  </div>
+  <div id="sheetResultsArea" style="display:none">
+    <div id="sheetResultsList"></div>
+  </div>
+  <div id="sheetCommitArea" style="display:none">
+    <button class="sheet-commit-btn" id="sheetCommitBtn" onclick="commitSheet()">Add items</button>
+  </div>
+  <div class="sheet-tabs-bar">
+    <button class="sheet-tab-btn sel" id="sheetTabDescribe" onclick="setSheetView('describe')">Describe</button>
+    <button class="sheet-tab-btn" id="sheetTabMyFoods" onclick="setSheetView('myfoods')">My Foods</button>
+  </div>
+  <div id="sheetTabContent">
     <div id="sheetDescribeView">
       <div class="photo-hint" id="sheetPhotoHint"></div>
       <div class="photo-grid" id="sheetPhotoGrid" style="display:none"></div>
-      <div class="input-row" style="margin-bottom:8px">
+      <div class="input-row">
         <textarea id="sheetInput" placeholder="Describe what you ate, or snap a photo…"></textarea>
         <button class="photo-btn" id="sheetPhotoBtn" onclick="document.getElementById('sheetPhotoInput').click()" title="Camera or photo library">
           <i class="ti ti-camera" aria-hidden="true"></i>
@@ -1001,13 +1046,8 @@
       </div>
       <button class="sheet-analyze-btn" id="sheetAnalyzeBtn" onclick="analyzeSheet()">Analyze</button>
       <input type="file" id="sheetPhotoInput" accept="image/*" multiple onchange="handleSheetPhoto(event)" style="display:none" />
-      <div id="sheetItems" style="display:none;margin-top:12px"></div>
-      <div id="sheetBlurb" style="display:none;margin-top:8px"></div>
-      <div id="sheetActions" style="display:none;margin-top:10px;gap:8px"></div>
     </div>
-    <!-- My Foods view -->
     <div id="sheetMyFoodsView" style="display:none">
-      <div class="sheet-filter-row" id="sheetFoodPills"></div>
       <div id="sheetFoodList"></div>
     </div>
   </div>
@@ -1039,7 +1079,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.5.14';
+  const APP_VERSION = 'v2.5.15';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1542,10 +1582,10 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   let currentDayLog = loadLog(selectedDate);
   let sheetImages = [];
   let sheetParsedItems = [];
+  let sheetClaudeResponse = '';
   let sheetMeal = 'breakfast';
   let sheetMealPillsOpen = false;
   let sheetViewMode = 'describe';
-  let sheetFoodFilter = 'breakfast';
   let sheetAnalyzed = false;
 
   // ---- DAY NAV ----
@@ -1849,33 +1889,31 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     sheetMeal = meal || 'breakfast';
     sheetImages = [];
     sheetParsedItems = [];
+    sheetClaudeResponse = '';
     sheetMealPillsOpen = false;
     sheetAnalyzed = false;
     sheetViewMode = 'describe';
-    sheetFoodFilter = sheetMeal;
     updateSheetMealChip();
-    // Reset to describe view (input phase)
+    // Reset describe view to input state
     const descView = document.getElementById('sheetDescribeView');
     const sfView = document.getElementById('sheetMyFoodsView');
     const tabD = document.getElementById('sheetTabDescribe');
     const tabS = document.getElementById('sheetTabMyFoods');
     if (descView) descView.style.display = 'block';
     if (sfView) sfView.style.display = 'none';
-    if (tabD) { tabD.classList.add('sel'); }
-    if (tabS) { tabS.classList.remove('sel'); }
-    const sheetInput = document.getElementById('sheetInput');
-    if (sheetInput) sheetInput.value = '';
-    const sheetItems = document.getElementById('sheetItems');
-    if (sheetItems) { sheetItems.style.display = 'none'; sheetItems.innerHTML = ''; }
-    const sheetBlurb = document.getElementById('sheetBlurb');
-    if (sheetBlurb) { sheetBlurb.style.display = 'none'; }
-    const sheetActions = document.getElementById('sheetActions');
-    if (sheetActions) { sheetActions.style.display = 'none'; }
+    if (tabD) tabD.classList.add('sel');
+    if (tabS) tabS.classList.remove('sel');
+    const inp = document.getElementById('sheetInput');
+    if (inp) inp.value = '';
+    const btn = document.getElementById('sheetAnalyzeBtn');
+    if (btn) { btn.textContent = 'Analyze'; btn.disabled = false; }
+    // Hide results/commit areas
+    renderResultsList();
     renderSheetPhotoGrid();
     document.getElementById('logSheetOverlay').classList.add('open');
     document.getElementById('logSheet').classList.add('open');
     lockScroll();
-    setTimeout(() => { const inp = document.getElementById('sheetInput'); if (inp) inp.focus(); }, 320);
+    setTimeout(() => { const i = document.getElementById('sheetInput'); if (i) i.focus(); }, 320);
   }
 
   function closeLogSheet() {
@@ -1884,6 +1922,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     unlockScroll();
     sheetImages = [];
     sheetParsedItems = [];
+    sheetClaudeResponse = '';
     sheetAnalyzed = false;
     sheetMealPillsOpen = false;
     const inp = document.getElementById('sheetInput');
@@ -1899,8 +1938,6 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     const label = document.getElementById('sheetMealLabel');
     if (icon) { icon.className = 'ti ' + m.tiIcon; icon.style.color = m.iconColor; }
     if (label) label.textContent = m.label;
-    const commitBtn = document.getElementById('sheetCommitBtn');
-    if (commitBtn) commitBtn.textContent = 'Add to ' + m.label;
   }
 
   function toggleSheetMealPills() {
@@ -1923,10 +1960,6 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     const pills = document.getElementById('sheetMealPills');
     if (pills) pills.style.display = 'none';
     updateSheetMealChip();
-    if (sheetViewMode === 'myfoods' && sheetFoodFilter !== 'all') {
-      sheetFoodFilter = key;
-      renderSheetFoods();
-    }
   }
 
   function setSheetView(view) {
@@ -1947,77 +1980,45 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
       if (sfView) sfView.style.display = 'block';
       if (tabD) tabD.classList.remove('sel');
       if (tabS) tabS.classList.add('sel');
-      sheetFoodFilter = sheetMeal;
       renderSheetFoods();
     }
   }
 
   function renderSheetFoods() {
     const allFoods = loadSavedFoods();
-    const pillsEl = document.getElementById('sheetFoodPills');
     const listEl = document.getElementById('sheetFoodList');
-    if (!pillsEl || !listEl) return;
-    const filterOptions = [...MEALS, { key: 'all', label: 'All' }];
-    pillsEl.innerHTML = filterOptions.map(m =>
-      `<button class="sheet-filter-pill${m.key === sheetFoodFilter ? ' sel' : ''}" onclick="setSheetFoodFilter('${m.key}')">${m.label}</button>`
-    ).join('');
-    const filtered = sheetFoodFilter === 'all' ? allFoods : allFoods.filter(f => f.meal === sheetFoodFilter);
-    if (filtered.length === 0) {
-      if (sheetFoodFilter === 'all') {
-        listEl.innerHTML = `<div class="sheet-empty">
-          <i class="ti ti-bookmark" aria-hidden="true" style="font-size:28px;color:var(--border);display:block;margin-bottom:8px"></i>
-          <div class="sheet-empty-text">No saved foods yet</div>
-          <button class="sheet-empty-cta" onclick="closeLogSheet();switchTab('myfoods')">Go to My Foods to add items</button>
-        </div>`;
-      } else {
-        const mealLabel = (MEALS.find(m => m.key === sheetFoodFilter) || {}).label || sheetFoodFilter;
-        listEl.innerHTML = `<div class="sheet-empty">
-          <i class="ti ti-bookmark" aria-hidden="true" style="font-size:28px;color:var(--border);display:block;margin-bottom:8px"></i>
-          <div class="sheet-empty-text">No ${mealLabel.toLowerCase()} items saved yet</div>
-          <button class="sheet-empty-cta" onclick="closeLogSheet();switchTab('myfoods')">Go to My Foods to add items</button>
-          <button class="sheet-show-all-link" onclick="setSheetFoodFilter('all')">Show all meals instead</button>
-        </div>`;
-      }
+    if (!listEl) return;
+    if (!allFoods.length) {
+      listEl.innerHTML = `<div class="sheet-empty">
+        <i class="ti ti-bookmark" aria-hidden="true" style="font-size:28px;color:var(--border);display:block;margin-bottom:8px"></i>
+        <div class="sheet-empty-text">No saved foods yet</div>
+        <button class="sheet-empty-cta" onclick="closeLogSheet();switchTab('myfoods')">Go to My Foods to add items</button>
+      </div>`;
       return;
     }
-    listEl.innerHTML = filtered.map(f => {
-      const showTag = sheetFoodFilter === 'all';
-      const mealLabel = (MEALS.find(m => m.key === f.meal) || {}).label || f.meal;
-      const tag = showTag ? `<span class="sheet-food-meal-tag">${mealLabel}</span>` : '';
+    listEl.innerHTML = allFoods.map(f => {
+      const mealObj = MEALS.find(m => m.key === f.meal);
+      const tag = mealObj ? `<span class="sheet-food-meal-tag">${mealObj.label}</span>` : '';
       return `<div class="sheet-food-row">
         <div style="flex:1">
           <div class="sheet-food-name">${escHtml(f.name)}${tag}</div>
-          <div class="sheet-food-meta">${escHtml(f.serving_size)} · ${f.calories} cal · ${f.protein_g}g protein</div>
+          <div class="sheet-food-meta">${escHtml(f.serving_size || '1 serving')} · ${f.calories} cal · ${f.protein_g}g protein</div>
         </div>
-        <button class="sheet-food-add-btn" onclick="commitSavedFood('${f.id}')" aria-label="Add ${escHtml(f.name)}">+</button>
+        <button class="sheet-food-add-btn" onclick="addSavedFoodToStaging('${f.id}')" aria-label="Add ${escHtml(f.name)}">+</button>
       </div>`;
     }).join('');
   }
 
-  function setSheetFoodFilter(key) {
-    sheetFoodFilter = key;
-    renderSheetFoods();
-  }
-
-  function commitSavedFood(id) {
+  function addSavedFoodToStaging(id) {
     const food = loadSavedFoods().find(f => f.id === id);
     if (!food) return;
-    currentDayLog.push({
+    sheetParsedItems.push({
       name: food.name, calories: food.calories, protein_g: food.protein_g,
-      note: food.serving_size, meal: sheetMeal,
-      quantity: 1, quantity_unit: food.serving_size,
+      note: food.serving_size || '', meal: sheetMeal,
+      quantity: 1, quantity_unit: food.serving_size || 'serving',
       cal_per_unit: food.calories, protein_per_unit: food.protein_g
     });
-    saveLog(selectedDate, currentDayLog);
-    updateDayUI(); renderDayNav();
-    const mealLabel = (MEALS.find(m => m.key === sheetMeal) || {}).label || sheetMeal;
-    showToast(food.name + ' added to ' + mealLabel);
-    const targetMeal = sheetMeal;
-    closeLogSheet();
-    setTimeout(() => {
-      const el = document.querySelector(`[data-meal="${targetMeal}"]`);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 150);
+    renderResultsList();
   }
 
   // ---- SHEET PHOTO ----
@@ -2081,13 +2082,12 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     if (!text && sheetImages.length === 0) return;
     if (!getApiKey()) { showToast('Add your API key in Settings first'); return; }
     btn.disabled = true;
-    const itemsEl = document.getElementById('sheetItems');
-    const blurbEl = document.getElementById('sheetBlurb');
-    const actionsEl = document.getElementById('sheetActions');
-    itemsEl.style.display = 'block';
-    itemsEl.innerHTML = '<div class="loading">Analyzing' + (sheetImages.length > 0 ? (sheetImages.length > 1 ? ' ' + sheetImages.length + ' photos' : ' photo') : '') + '…</div>';
-    blurbEl.style.display = 'none';
-    actionsEl.style.display = 'none';
+    // results rendered in shared staging area via renderResultsList()
+    const claudeBlock = document.getElementById('sheetClaudeBlock');
+    claudeBlock.style.display = 'block';
+    document.getElementById('sheetClaudeText').innerHTML = '<span class="loading" style="padding:0;margin:0">Analyzing' + (sheetImages.length > 0 ? (sheetImages.length > 1 ? ' ' + sheetImages.length + ' photos' : ' photo') : '') + '…</span>';
+    document.getElementById('sheetResultsArea').style.display = 'none';
+    document.getElementById('sheetCommitArea').style.display = 'none';
 
     const prevDate = (() => {
       const d = new Date(selectedDate + 'T12:00:00');
@@ -2128,7 +2128,11 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
       });
       const data = await res.json();
       if (!res.ok) {
-        itemsEl.innerHTML = `<div class="ai-bubble" style="border-left-color:var(--danger)"><div class="ai-label" style="color:var(--danger)">Error</div>${(data.error && data.error.message) || 'API error ' + res.status}</div>`;
+        const claudeBlock2 = document.getElementById('sheetClaudeBlock');
+        claudeBlock2.style.display = 'block';
+        claudeBlock2.style.borderLeftColor = 'var(--danger)';
+        document.getElementById('sheetClaudeText').textContent = (data.error && data.error.message) || 'API error ' + res.status;
+        document.getElementById('sheetClaudeBlock').querySelector('.ai-label').style.color = 'var(--danger)';
         btn.disabled = false; return;
       }
       const raw = data.content[0].text.trim();
@@ -2146,51 +2150,67 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
           cal_per_unit: item.cal_per_unit || item.calories,
           protein_per_unit: item.protein_per_unit || item.protein_g
         }));
+        sheetClaudeResponse = parsed.response || '';
         sheetAnalyzed = true;
-        renderSheetItems(parsed.response || '');
+        const cb = document.getElementById('sheetClaudeBlock');
+        cb.style.borderLeftColor = 'var(--accent)';
+        cb.querySelector('.ai-label').style.color = '';
+        document.getElementById('sheetClaudeText').textContent = sheetClaudeResponse;
+        renderResultsList();
+        const analyzeBtn = document.getElementById('sheetAnalyzeBtn');
+        if (analyzeBtn) analyzeBtn.textContent = 'Re-analyze';
       } else {
-        itemsEl.innerHTML = '<div class="ai-bubble"><div class="ai-label">Claude</div>Could not read that — try a clearer photo or describe the food.</div>';
+        const cb3 = document.getElementById('sheetClaudeBlock');
+        cb3.style.display = 'block';
+        document.getElementById('sheetClaudeText').textContent = 'Could not read that — try a clearer photo or describe the food.';
       }
     } catch(err) {
-      itemsEl.innerHTML = `<div class="ai-bubble" style="border-left-color:var(--danger)"><div class="ai-label" style="color:var(--danger)">Error</div>${err && err.message ? err.message : 'Unknown error'}</div>`;
+      const cb4 = document.getElementById('sheetClaudeBlock');
+      cb4.style.display = 'block';
+      cb4.style.borderLeftColor = 'var(--danger)';
+      cb4.querySelector('.ai-label').style.color = 'var(--danger)';
+      document.getElementById('sheetClaudeText').textContent = err && err.message ? err.message : 'Unknown error';
     }
     btn.disabled = false;
   }
 
-  function renderSheetItems(blurb) {
-    const mealLabel = (MEALS.find(m => m.key === sheetMeal) || {}).label || 'Meal';
-    const itemsEl = document.getElementById('sheetItems');
-    const blurbEl = document.getElementById('sheetBlurb');
-    const actionsEl = document.getElementById('sheetActions');
-    itemsEl.style.display = 'block';
-    itemsEl.innerHTML = sheetParsedItems.map((item) =>
-      `<div class="sheet-item-card">
-        <div class="sheet-item-name">${escHtml(item.name)}</div>
-        <div class="sheet-item-meta">${item.quantity} ${escHtml(item.quantity_unit)} · ${item.calories} cal · ${item.protein_g}g protein</div>
+  function renderResultsList() {
+    const claudeBlock = document.getElementById('sheetClaudeBlock');
+    const resultsArea = document.getElementById('sheetResultsArea');
+    const commitArea = document.getElementById('sheetCommitArea');
+    const resultsList = document.getElementById('sheetResultsList');
+    if (!resultsArea || !resultsList) return;
+    if (sheetParsedItems.length === 0) {
+      resultsArea.style.display = 'none';
+      commitArea.style.display = 'none';
+      if (!sheetClaudeResponse) claudeBlock.style.display = 'none';
+      return;
+    }
+    resultsList.innerHTML = sheetParsedItems.map((item, i) =>
+      `<div class="sheet-result-row">
+        <div class="sheet-result-info">
+          <div class="sheet-result-name">${escHtml(item.name)}</div>
+          <div class="sheet-result-meta">${item.quantity} ${escHtml(item.quantity_unit)} · ${item.calories} cal · ${item.protein_g}g protein</div>
+        </div>
+        <button class="sheet-result-del" onclick="deleteSheetItem(${i})" aria-label="Remove item">&#215;</button>
       </div>`
     ).join('');
-    if (blurb) {
-      blurbEl.style.display = 'block';
-      blurbEl.innerHTML = `<div class="ai-bubble"><div class="ai-label">Claude</div>${blurb}</div>`;
-    }
-    actionsEl.style.display = 'flex';
-    actionsEl.innerHTML = `
-      <button class="sheet-retry-btn" onclick="retrySheet()">Try again</button>
-      <button class="sheet-commit-btn" id="sheetCommitBtn" onclick="commitSheet()">Add to ${mealLabel}</button>
-    `;
+    resultsArea.style.display = 'block';
+    const totalCal = sheetParsedItems.reduce((s, x) => s + x.calories, 0);
+    const n = sheetParsedItems.length;
+    document.getElementById('sheetCommitBtn').textContent = `Add ${n} item${n !== 1 ? 's' : ''} · ${totalCal} cal`;
+    commitArea.style.display = 'block';
   }
 
-  function retrySheet() {
-    sheetAnalyzed = false;
-    sheetParsedItems = [];
-    const itemsEl = document.getElementById('sheetItems');
-    const blurbEl = document.getElementById('sheetBlurb');
-    const actionsEl = document.getElementById('sheetActions');
-    if (itemsEl) { itemsEl.style.display = 'none'; itemsEl.innerHTML = ''; }
-    if (blurbEl) blurbEl.style.display = 'none';
-    if (actionsEl) actionsEl.style.display = 'none';
-    const inp = document.getElementById('sheetInput');
-    if (inp) { inp.value = ''; inp.focus(); }
+  function deleteSheetItem(i) {
+    sheetParsedItems.splice(i, 1);
+    if (sheetParsedItems.length === 0) {
+      sheetAnalyzed = false;
+      sheetClaudeResponse = '';
+      const btn = document.getElementById('sheetAnalyzeBtn');
+      if (btn) btn.textContent = 'Analyze';
+    }
+    renderResultsList();
   }
 
   function commitSheet() {
