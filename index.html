@@ -1010,7 +1010,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.5.0';
+  const APP_VERSION = 'v2.5.1';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1423,7 +1423,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   }
   function applySettings(s) {
     const name = s.name ? s.name + "'s " : '';
-    document.getElementById('headerSubtitle').textContent 
+    document.getElementById('headerSubtitle').textContent =
       s.startWeight + ' → ' + s.goalWeight + ' lbs  ·  ' + s.calGoal.toLocaleString() + ' cal  ·  ' + s.proGoal + 'g protein';
     document.title = name ? name + 'Fuel Log' : 'Fuel Log';
     updateDayUI();
@@ -1573,7 +1573,6 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   // ---- RENDER MEAL SECTIONS ----
   function renderMealSections(log, locked, isFuture) {
     if (isFuture) return '<div class="empty-state">Future day.</div>';
-    if (log.length === 0 && !locked) return '<div class="empty-state" style="margin-bottom:12px">Nothing logged yet — pick a meal below and start adding.</div>';
 
     return MEALS.map(m => {
       // Entries for this meal (legacy entries without meal field default to 'snack')
