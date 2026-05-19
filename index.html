@@ -1010,7 +1010,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.5.2';
+  const APP_VERSION = 'v2.5.3';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1524,7 +1524,6 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
       const todayStr = today();
       selectedDate = newDates.includes(todayStr) ? todayStr : newDates[0];
       currentDayLog = loadLog(selectedDate);
-      document.getElementById('aiResponse').innerHTML = '';
     }
     renderDayNav(); updateDayUI();
   }
@@ -1533,8 +1532,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     if (date > today()) return;
     selectedDate = date;
     currentDayLog = loadLog(date);
-    document.getElementById('aiResponse').innerHTML = '';
-    clearPhoto(); renderDayNav(); updateDayUI();
+    renderDayNav(); updateDayUI();
   }
 
   // ---- CONFIRM MODAL ----
@@ -2488,7 +2486,5 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   setupStickyObservers();
   updateStickyTop();
 </script>
-</body>
-</html>cript>
 </body>
 </html>
