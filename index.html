@@ -1039,7 +1039,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.5.7';
+  const APP_VERSION = 'v2.5.9';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1492,6 +1492,19 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   function today() {
     const d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function getWeekOffsetForDate(dateStr) {
+    // Returns the week offset (0, -1, -2 ...) whose Mon–Sun range contains dateStr
+    const target = new Date(dateStr + 'T00:00:00');
+    const now = new Date();
+    const curMonday = new Date(now);
+    curMonday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    curMonday.setHours(0, 0, 0, 0);
+    const tgtMonday = new Date(target);
+    tgtMonday.setDate(target.getDate() - ((target.getDay() + 6) % 7));
+    tgtMonday.setHours(0, 0, 0, 0);
+    return Math.round((tgtMonday - curMonday) / (7 * 86400000));
   }
 
   function getWeekDatesForOffset(offset) {
@@ -2333,61 +2346,42 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     const headerH = document.querySelector('header').offsetHeight;
     const weekNavEl = document.getElementById('weekNav');
     const dayTabsEl = document.getElementById('dayTabs');
-    if (!weekNavEl) return;
+    if (!weekNavEl || !dayTabsEl) return;
 
     const hdr = document.getElementById('stickySubHeader');
     const progEl = document.getElementById('stickyProgress');
-    const weekNavBottom = weekNavEl.getBoundingClientRect().bottom;
 
-    // Cross-fade zone: FADE_ZONE px above header → threshold
-    // crossPct: 0 = originals fully visible, 1 = sticky fully visible
+    // Trigger exactly when the day tabs reach the sticky sub-header tab position.
+    // The sticky sub-header has 5px top padding before its day tabs, so offset by that.
+    // visibility:hidden on originals preserves layout (no content jump), just hides them.
+    const dayTabsTop = dayTabsEl.getBoundingClientRect().top;
+    const THRESHOLD = headerH + 5;
     const HYST = 8;
-    const FADE_ZONE = 28;
-    const fadeStart = headerH + FADE_ZONE;
-    const fadeEnd   = headerH - HYST;
 
-    let crossPct;
-    if (weekNavBottom >= fadeStart) {
-      crossPct = 0;
-    } else if (weekNavBottom <= fadeEnd) {
-      crossPct = 1;
-    } else {
-      crossPct = 1 - (weekNavBottom - fadeEnd) / (fadeStart - fadeEnd);
-    }
-
-    // Fade original week nav + day tabs in/out
-    const origOpacity = (1 - crossPct).toString();
-    weekNavEl.style.opacity = origOpacity;
-    if (dayTabsEl) dayTabsEl.style.opacity = origOpacity;
-
-    // Show/hide sticky header (opacity driven by JS, no CSS transition)
-    if (crossPct > 0) {
-      hdr.style.opacity = crossPct.toString();
-      hdr.style.pointerEvents = 'auto';
-      if (!_stickyInited) {
-        _stickyInited = true;
-        // Auto-snap back to current week if user was browsing a past week
-        if (currentWeekOffset !== 0) {
-          currentWeekOffset = 0;
-          renderDayNav();
-        }
-        renderStickyDayTabs();
-        updateStickyTop();
-        hdr.classList.add('visible');
+    if (!_stickyShown && dayTabsTop <= THRESHOLD + HYST) {
+      _stickyShown = true;
+      _stickyInited = true;
+      _stickyTriggerY = window.scrollY;
+      const _neededOffset = getWeekOffsetForDate(selectedDate);
+      if (currentWeekOffset !== _neededOffset) {
+        currentWeekOffset = _neededOffset;
+        renderDayNav();
       }
-    } else {
-      hdr.style.opacity = '0';
-      hdr.style.pointerEvents = 'none';
+      renderStickyDayTabs();
+      updateStickyTop();
+      hdr.classList.add('visible');
+      hdr.style.opacity = '1';
+      hdr.style.pointerEvents = 'auto';
+      weekNavEl.style.visibility = 'hidden';
+      dayTabsEl.style.visibility = 'hidden';
+    } else if (_stickyShown && dayTabsTop > THRESHOLD + HYST) {
+      _stickyShown = false;
       _stickyInited = false;
       hdr.classList.remove('visible');
-    }
-
-    // Track when we're fully locked in (past threshold) for progress animation
-    if (crossPct >= 1 && !_stickyShown) {
-      _stickyShown = true;
-      _stickyTriggerY = window.scrollY;
-    } else if (crossPct < 1 && _stickyShown) {
-      _stickyShown = false;
+      hdr.style.opacity = '0';
+      hdr.style.pointerEvents = 'none';
+      weekNavEl.style.visibility = '';
+      dayTabsEl.style.visibility = '';
       progEl.style.height = '0px';
       document.getElementById('stickyCalFill').style.width = '0%';
       document.getElementById('stickyProFill').style.width = '0%';
@@ -2395,9 +2389,8 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
 
     if (!_stickyShown) return;
 
-    // Progress animation: scroll-offset-based (not ring-position)
-    // Completes after ANIM_RANGE px of scrolling past the trigger point.
-    // This works even when meals are collapsed and page is short.
+    // Progress animation: scroll-offset-based — completes after ANIM_RANGE px
+    // regardless of page height (works even when all meals are collapsed)
     const ANIM_RANGE = 100;
     const raw      = Math.min(Math.max((window.scrollY - _stickyTriggerY) / ANIM_RANGE, 0), 1);
     const progress = _easeInOut(raw);
