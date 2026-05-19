@@ -226,7 +226,7 @@
   #logSheetOverlay.open { display: block; }
   #logSheet {
     position: fixed;
-    top: 60px;
+    top: 72px;
     left: 16px; right: 16px; z-index: 45;
     background: var(--surface);
     border-radius: 14px;
@@ -237,7 +237,7 @@
   }
   #logSheet.open { transform: scale(1); opacity: 1; pointer-events: auto; }
   .sheet-hdr {
-    padding: 0 16px 10px;
+    padding: 14px 16px 12px;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
   }
@@ -400,7 +400,7 @@
   }
   textarea:focus { border-color: rgba(52,211,153,0.35); }
   textarea::placeholder { color: var(--muted); }
-  #sheetDescribeView textarea { height: 60px; }
+  #sheetDescribeView textarea { height: 88px; }
   .photo-btn {
     background: var(--surface); border: 1.5px solid var(--border);
     border-radius: var(--r-sm); color: var(--muted); font-size: 18px;
@@ -1203,7 +1203,7 @@
         <span class="sf-form-title">${isEdit ? 'Edit Item' : 'New Item'}</span>
       </div>
       <div style="background:var(--surface);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;">
-        <textarea id="sfInput" placeholder="Describe it… e.g. Dunkin iced coffee with oat milk, one pump vanilla" style="background:transparent;border:none;padding:13px 15px;width:100%;font-family:'Inter',sans-serif;font-size:14px;color:var(--text);resize:none;outline:none;min-height:78px;line-height:1.5;display:block;"></textarea>
+        <textarea id="sfInput" placeholder="Describe it… e.g. Dunkin iced coffee with oat milk, one pump vanilla" style="background:transparent;border:none;padding:13px 15px;width:100%;font-family:'Inter',sans-serif;font-size:14px;color:var(--text);resize:none;outline:none;min-height:88px;line-height:1.5;display:block;"></textarea>
         <div style="display:flex;gap:8px;padding:8px 12px;border-top:1px solid var(--border);">
           <button class="photo-btn" id="sfPhotoBtn" onclick="document.getElementById('sfPhotoInput').click()" style="width:40px;height:38px;" title="Add photo">
             <i class="ti ti-camera" aria-hidden="true" style="font-size:18px"></i>
@@ -1922,6 +1922,8 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     document.getElementById('logSheetOverlay').classList.add('open');
     document.getElementById('logSheet').classList.add('open');
     lockScroll();
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', _handleKeyboardResize);
+    _handleKeyboardResize();
     setTimeout(() => { const i = document.getElementById('sheetInput'); if (i) i.focus(); }, 320);
   }
 
@@ -1929,6 +1931,8 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     document.getElementById('logSheetOverlay').classList.remove('open');
     const _ls = document.getElementById('logSheet');
     _ls.classList.remove('open');
+    _ls.style.maxHeight = '';
+    if (window.visualViewport) window.visualViewport.removeEventListener('resize', _handleKeyboardResize);
     unlockScroll();
     sheetImages = [];
     sheetParsedItems = [];
@@ -2445,7 +2449,10 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   }
 
   function _handleKeyboardResize() {
-    // Modal is top-anchored — keyboard slides under it, no repositioning needed
+    const sheet = document.getElementById('logSheet');
+    if (!sheet || !sheet.classList.contains('open')) return;
+    const vvh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    sheet.style.maxHeight = Math.max(200, vvh - 72 - 16) + 'px';
   }
 
   function setupStickyObservers() {
