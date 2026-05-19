@@ -377,12 +377,11 @@
   }
   .photo-thumb-clear:hover { color: var(--danger); }
   .photo-hint { font-size: 12px; color: var(--accent2); margin-bottom: 8px; font-weight: 500; display: none; }
-  #photoMenuOverlay { position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,0.55); display: none; }
-  #photoMenu { position: fixed; bottom: 0; left: 0; right: 0; z-index: 71; background: var(--surface); border-radius: 16px 16px 0 0; padding: 8px 12px env(safe-area-inset-bottom, 20px); display: none; }
-  .photo-menu-opt { display: flex; align-items: center; gap: 12px; width: 100%; padding: 15px 4px; border: none; background: none; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: var(--text); border-bottom: 1px solid var(--border); text-align: left; }
-  .photo-menu-opt:last-of-type { border-bottom: none; }
-  .photo-menu-opt i { font-size: 20px; color: var(--accent); width: 24px; text-align: center; }
-  .photo-menu-cancel { display: block; width: 100%; padding: 15px; margin-top: 8px; border: none; background: var(--surface2); border-radius: var(--r); cursor: pointer; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 700; color: var(--muted); }
+  #photoMenuOverlay { position: fixed; inset: 0; z-index: 70; background: transparent; display: none; }
+  #photoMenu { position: fixed; z-index: 71; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 4px; width: 210px; display: none; box-shadow: 0 8px 28px rgba(0,0,0,0.6); }
+  .photo-menu-opt { display: flex; align-items: center; gap: 11px; width: 100%; padding: 12px 14px; border: none; background: none; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; color: var(--text); border-radius: 10px; text-align: left; }
+  .photo-menu-opt:active { background: var(--surface2); }
+  .photo-menu-opt i { font-size: 18px; color: var(--accent); width: 20px; text-align: center; }
   .input-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 8px; }
   textarea {
     flex: 1; background: var(--surface); border: 1.5px solid var(--border);
@@ -1063,7 +1062,6 @@
 <div id="photoMenu">
   <button class="photo-menu-opt" onclick="triggerPhotoCapture()"><i class="ti ti-camera"></i>Take Photo</button>
   <button class="photo-menu-opt" onclick="triggerPhotoLibrary()"><i class="ti ti-photo"></i>Photo Library</button>
-  <button class="photo-menu-cancel" onclick="closePhotoMenu()">Cancel</button>
 </div>
 
 <!-- BOTTOM TAB BAR -->
@@ -1092,7 +1090,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.6.4';
+  const APP_VERSION = 'v2.6.5';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -2134,8 +2132,20 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   // ---- ANALYZE SHEET ----
 
   function openPhotoMenu() {
+    const btn = document.getElementById('sheetPhotoBtn');
+    const menu = document.getElementById('photoMenu');
     document.getElementById('photoMenuOverlay').style.display = 'block';
-    document.getElementById('photoMenu').style.display = 'block';
+    menu.style.display = 'block';
+    // position above the button
+    const rect = btn.getBoundingClientRect();
+    const menuW = 210;
+    const menuH = menu.offsetHeight || 110;
+    let left = rect.left;
+    if (left + menuW > window.innerWidth - 12) left = window.innerWidth - menuW - 12;
+    if (left < 12) left = 12;
+    const top = rect.top - menuH - 8;
+    menu.style.top = Math.max(top, 60) + 'px';
+    menu.style.left = left + 'px';
   }
   function closePhotoMenu() {
     document.getElementById('photoMenuOverlay').style.display = 'none';
