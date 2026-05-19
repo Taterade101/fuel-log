@@ -5,7 +5,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, interactive-widget=resizes-visual">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fuel Log">
@@ -1081,7 +1081,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.5.16';
+  const APP_VERSION = 'v2.5.17';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1921,7 +1921,9 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
 
   function closeLogSheet() {
     document.getElementById('logSheetOverlay').classList.remove('open');
-    document.getElementById('logSheet').classList.remove('open');
+    const _ls = document.getElementById('logSheet');
+    _ls.classList.remove('open');
+    _ls.style.bottom = 'calc(53px + env(safe-area-inset-bottom))';
     unlockScroll();
     sheetImages = [];
     sheetParsedItems = [];
@@ -2436,6 +2438,20 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     document.getElementById('stickyProFill').style.width = (_stickyProPct * progress) + '%';
   }
 
+  function _handleKeyboardResize() {
+    const sheet = document.getElementById('logSheet');
+    if (!sheet || !sheet.classList.contains('open')) return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const keyboardH = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    if (keyboardH > 80) {
+      sheet.style.bottom = keyboardH + 'px';
+      sheet.style.transition = 'transform 0.28s ease, bottom 0.22s ease';
+    } else {
+      sheet.style.bottom = 'calc(53px + env(safe-area-inset-bottom))';
+    }
+  }
+
   function setupStickyObservers() {
     // Disconnect any leftover observers (belt-and-suspenders)
     if (_weekNavObs) { _weekNavObs.disconnect(); _weekNavObs = null; }
@@ -2454,6 +2470,10 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
         _applyStickyScroll();
       });
     }, { passive: true });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', _handleKeyboardResize);
+      window.visualViewport.addEventListener('scroll', _handleKeyboardResize);
+    }
 
     // Seed values and run an immediate check
     updateStickyProgress();
