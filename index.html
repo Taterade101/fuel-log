@@ -1039,7 +1039,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.5.10';
+  const APP_VERSION = 'v2.5.11';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -2360,14 +2360,14 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     const hdr = document.getElementById('stickySubHeader');
     const progEl = document.getElementById('stickyProgress');
 
-    // Trigger exactly when the day tabs reach the sticky sub-header tab position.
-    // The sticky sub-header has 5px top padding before its day tabs, so offset by that.
+    // Show sticky exactly when day tabs' top edge reaches the header bottom.
+    // HYST only on the HIDE direction (prevents flicker on scroll-up) — not show.
     // visibility:hidden on originals preserves layout (no content jump), just hides them.
     const dayTabsTop = dayTabsEl.getBoundingClientRect().top;
-    const THRESHOLD = headerH + 5;
+    const THRESHOLD = headerH;
     const HYST = 8;
 
-    if (!_stickyShown && dayTabsTop <= THRESHOLD + HYST) {
+    if (!_stickyShown && dayTabsTop <= THRESHOLD) {
       _stickyShown = true;
       _stickyInited = true;
       _stickyTriggerY = window.scrollY;
