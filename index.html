@@ -2275,7 +2275,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     if (!_stickyShown) return;
 
     // Scroll progress: 0 when ring bottom is at headerH+40, 1 when at headerH-60
-    const rangeStart = headerH + 40;
+    const rangeStart = headerH + 120;
     const rangeEnd   = headerH - 60;
     const raw      = Math.min(Math.max((rangeStart - ringBottom) / (rangeStart - rangeEnd), 0), 1);
     const progress = _easeInOut(raw);
