@@ -240,8 +240,14 @@
     color: var(--accent); font-family: 'Inter', sans-serif;
     font-size: 14px; font-weight: 600; min-width: 64px; padding: 0;
   }
-  #lvMealChip { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; }
-  #lvMealSelect { background: transparent; border: none; outline: none; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); cursor: pointer; padding: 2px 4px; }
+  #lvMealChip { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; }
+  #lvMealChipBtn { display: flex; align-items: center; gap: 5px; background: none; border: none; cursor: pointer; font-family: 'Inter', sans-serif; padding: 4px 8px; border-radius: 8px; }
+  #lvMealChipBtn span { font-size: 13px; font-weight: 700; color: var(--text); }
+  #lvMealDropdown { position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px; z-index: 60; box-shadow: 0 8px 28px rgba(0,0,0,0.5); min-width: 148px; display: none; }
+  #lvMealDropdown.open { display: block; }
+  .lv-meal-opt { display: flex; align-items: center; gap: 9px; width: 100%; padding: 9px 11px; border: none; background: none; cursor: pointer; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: var(--text); text-align: left; }
+  .lv-meal-opt i { font-size: 15px; }
+  .lv-meal-opt.sel { background: var(--surface2); font-weight: 700; }
   #lvTabs {
     display: flex; margin: 12px 16px 0;
     background: var(--surface2); border-radius: 10px;
@@ -994,13 +1000,17 @@
       <i class="ti ti-chevron-left" aria-hidden="true"></i>Cancel
     </button>
     <div id="lvMealChip">
-      <i class="ti" id="sheetMealIcon" aria-hidden="true" style="font-size:14px"></i>
-      <select id="lvMealSelect" onchange="setLogMeal(this.value)">
-        <option value="breakfast">Breakfast</option>
-        <option value="lunch">Lunch</option>
-        <option value="dinner">Dinner</option>
-        <option value="snack">Snacks</option>
-      </select>
+      <button id="lvMealChipBtn" onclick="toggleMealDropdown(event)">
+        <i class="ti" id="sheetMealIcon" aria-hidden="true" style="font-size:14px"></i>
+        <span id="sheetMealLabel"></span>
+        <i class="ti ti-chevron-down" id="lvMealChevron" aria-hidden="true" style="font-size:10px;color:var(--muted);transition:transform 0.15s"></i>
+      </button>
+      <div id="lvMealDropdown">
+        <button class="lv-meal-opt" data-meal="breakfast" onclick="setLogMeal('breakfast')"><i class="ti ti-coffee" style="color:var(--accent3)"></i>Breakfast</button>
+        <button class="lv-meal-opt" data-meal="lunch" onclick="setLogMeal('lunch')"><i class="ti ti-sun" style="color:var(--accent)"></i>Lunch</button>
+        <button class="lv-meal-opt" data-meal="dinner" onclick="setLogMeal('dinner')"><i class="ti ti-moon" style="color:var(--accent2)"></i>Dinner</button>
+        <button class="lv-meal-opt" data-meal="snack" onclick="setLogMeal('snack')"><i class="ti ti-star" style="color:var(--danger)"></i>Snacks</button>
+      </div>
     </div>
     <div style="min-width:64px"></div>
   </div>
@@ -1065,7 +1075,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.6.2';
+  const APP_VERSION = 'v2.6.3';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1917,16 +1927,45 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   function updateLvMealChip() {
     const m = MEALS.find(x => x.key === sheetMeal) || MEALS[0];
     const icon = document.getElementById('sheetMealIcon');
-    const sel = document.getElementById('lvMealSelect');
+    const label = document.getElementById('sheetMealLabel');
     const ctx = document.getElementById('lvContextLine');
     if (icon) { icon.className = 'ti ' + m.tiIcon; icon.style.color = m.iconColor; }
-    if (sel) sel.value = m.key;
+    if (label) label.textContent = m.label;
     if (ctx) ctx.textContent = 'What did you have for ' + m.label.toLowerCase() + '?';
+    document.querySelectorAll('.lv-meal-opt').forEach(btn => {
+      btn.classList.toggle('sel', btn.dataset.meal === sheetMeal);
+    });
+  }
+
+  function toggleMealDropdown(e) {
+    if (e) e.stopPropagation();
+    const dd = document.getElementById('lvMealDropdown');
+    if (!dd) return;
+    const opening = !dd.classList.contains('open');
+    dd.classList.toggle('open');
+    const chev = document.getElementById('lvMealChevron');
+    if (chev) chev.style.transform = opening ? 'rotate(180deg)' : '';
+    if (opening) {
+      setTimeout(function() {
+        document.addEventListener('click', function _ddClose() {
+          closeMealDropdown();
+          document.removeEventListener('click', _ddClose);
+        });
+      }, 10);
+    }
+  }
+
+  function closeMealDropdown() {
+    const dd = document.getElementById('lvMealDropdown');
+    if (dd) dd.classList.remove('open');
+    const chev = document.getElementById('lvMealChevron');
+    if (chev) chev.style.transform = '';
   }
 
   function setLogMeal(key) {
     sheetMeal = key;
     updateLvMealChip();
+    closeMealDropdown();
   }
 
   function selectLogTab(view) {
