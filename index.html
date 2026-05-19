@@ -564,7 +564,8 @@
 
   /* ── STICKY SUB-HEADER ── */
   #stickySubHeader {
-    position: sticky;
+    position: fixed;
+    left: 0; right: 0;
     top: 66px; /* JS overrides this dynamically */
     z-index: 39;
     background: var(--bg);
@@ -579,9 +580,10 @@
     padding: 5px 20px 6px;
   }
   #stickyProgress {
-    padding: 4px 20px 8px;
+    overflow: hidden;
+    height: 0; /* grows via JS scroll-driven animation */
   }
-  .sticky-prog-row { display: flex; gap: 12px; }
+  .sticky-prog-row { display: flex; gap: 12px; padding: 4px 20px 10px; }
   .sticky-prog-col { flex: 1; min-width: 0; }
   .sticky-prog-nums { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
   .sticky-prog-val { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -1010,7 +1012,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.5.3';
+  const APP_VERSION = 'v2.5.4';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1630,6 +1632,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
       document.getElementById('stickySubHeader').classList.remove('visible');
       document.getElementById('stickyCalFill').style.width = '0%';
       document.getElementById('stickyProFill').style.width = '0%';
+      document.getElementById('stickyProgress').style.height = '0px';
     }
     if (tab === 'today') { renderDayNav(); updateDayUI(); requestAnimationFrame(_applyStickyScroll); }
     if (tab === 'week') renderWeek();
@@ -2234,8 +2237,11 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   let _stickyCalPct = 0, _stickyProPct = 0;
   let _scrollRAF = null;
   let _stickyShown = false;
+  let _stickyProgH = 0; // natural height of progress section, measured on first show
   // Keep stubs so old call-sites don't throw
   let _weekNavObs = null, _ringObs = null;
+
+  function _easeInOut(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
 
   function _applyStickyScroll() {
     if (!document.getElementById('page-today').classList.contains('active')) return;
@@ -2245,27 +2251,39 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     if (!weekNavEl || !ringEl) return;
 
     const hdr = document.getElementById('stickySubHeader');
+    const progEl = document.getElementById('stickyProgress');
     const weekNavBottom = weekNavEl.getBoundingClientRect().bottom;
-    const ringBottom   = ringEl.getBoundingClientRect().bottom;
+    const ringBottom    = ringEl.getBoundingClientRect().bottom;
 
-    // Show / hide day-tab strip when weekNav clears the main header
-    const shouldShow = weekNavBottom < headerH;
-    if (shouldShow !== _stickyShown) {
-      _stickyShown = shouldShow;
-      if (shouldShow) {
-        renderStickyDayTabs();
-        updateStickyTop();
-        hdr.classList.add('visible');
-      } else {
-        hdr.classList.remove('visible');
-      }
+    // Hysteresis: 8px buffer prevents threshold flickering
+    const HYST = 8;
+    if (!_stickyShown && weekNavBottom < headerH - HYST) {
+      _stickyShown = true;
+      renderStickyDayTabs();
+      updateStickyTop();
+      hdr.classList.add('visible');
+      // Measure natural height of progress section once
+      progEl.style.height = 'auto';
+      _stickyProgH = progEl.scrollHeight;
+      progEl.style.height = '0px';
+    } else if (_stickyShown && weekNavBottom > headerH + HYST) {
+      _stickyShown = false;
+      hdr.classList.remove('visible');
+      progEl.style.height = '0px';
     }
 
-    // Scroll-driven bar fill: bars grow from 0 → actual value as the ring
-    // scrolls from (headerH + 40) down to (headerH - 60) in viewport space.
+    if (!_stickyShown) return;
+
+    // Scroll progress: 0 when ring bottom is at headerH+40, 1 when at headerH-60
     const rangeStart = headerH + 40;
     const rangeEnd   = headerH - 60;
-    const progress = Math.min(Math.max((rangeStart - ringBottom) / (rangeStart - rangeEnd), 0), 1);
+    const raw      = Math.min(Math.max((rangeStart - ringBottom) / (rangeStart - rangeEnd), 0), 1);
+    const progress = _easeInOut(raw);
+
+    // Grow the entire progress section from 0 → full height
+    progEl.style.height = (progress * _stickyProgH) + 'px';
+
+    // Bars fill left-to-right simultaneously
     document.getElementById('stickyCalFill').style.width = (_stickyCalPct * progress) + '%';
     document.getElementById('stickyProFill').style.width = (_stickyProPct * progress) + '%';
   }
