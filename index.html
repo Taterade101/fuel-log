@@ -288,6 +288,7 @@
     cursor: pointer; width: 100%; transition: opacity 0.2s;
   }
   .lv-primary-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .lv-secondary-btn { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); border-radius: var(--r); font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 700; padding: 14px; cursor: pointer; width: 100%; transition: opacity 0.2s; margin-top: 8px; }
   #sheetClaudeBlock {
     flex-shrink: 0; margin: 8px 16px 0;
     background: var(--surface); border-radius: var(--r);
@@ -336,6 +337,10 @@
     font-size: 18px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
   }
+  .sf-qty-ctrl { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .sf-qty-btn { width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--surface); color: var(--text); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+  .sf-qty-btn.sf-qty-add { background: var(--accent); color: #0C0C0E; }
+  .sf-qty-num { font-size: 15px; font-weight: 700; color: var(--text); min-width: 16px; text-align: center; }
 
   .sheet-empty {
     background: var(--surface2); border-radius: var(--r);
@@ -372,6 +377,12 @@
   }
   .photo-thumb-clear:hover { color: var(--danger); }
   .photo-hint { font-size: 12px; color: var(--accent2); margin-bottom: 8px; font-weight: 500; display: none; }
+  #photoMenuOverlay { position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,0.55); display: none; }
+  #photoMenu { position: fixed; bottom: 0; left: 0; right: 0; z-index: 71; background: var(--surface); border-radius: 16px 16px 0 0; padding: 8px 12px env(safe-area-inset-bottom, 20px); display: none; }
+  .photo-menu-opt { display: flex; align-items: center; gap: 12px; width: 100%; padding: 15px 4px; border: none; background: none; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: var(--text); border-bottom: 1px solid var(--border); text-align: left; }
+  .photo-menu-opt:last-of-type { border-bottom: none; }
+  .photo-menu-opt i { font-size: 20px; color: var(--accent); width: 24px; text-align: center; }
+  .photo-menu-cancel { display: block; width: 100%; padding: 15px; margin-top: 8px; border: none; background: var(--surface2); border-radius: var(--r); cursor: pointer; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 700; color: var(--muted); }
   .input-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 8px; }
   textarea {
     flex: 1; background: var(--surface); border: 1.5px solid var(--border);
@@ -1034,7 +1045,7 @@
         <div class="photo-grid" id="sheetPhotoGrid" style="display:none"></div>
         <textarea id="sheetInput" placeholder="Describe what you ate, or snap a photo…"></textarea>
         <div class="lv-input-footer">
-          <button id="sheetPhotoBtn" onclick="document.getElementById('sheetPhotoInput').click()" aria-label="Add photo">
+          <button id="sheetPhotoBtn" onclick="openPhotoMenu()" aria-label="Add photo">
             <i class="ti ti-camera" aria-hidden="true"></i>Add photo
           </button>
         </div>
@@ -1047,6 +1058,12 @@
     </div>
   </div>
   <div id="lvPinned"></div>
+</div>
+<div id="photoMenuOverlay" onclick="closePhotoMenu()"></div>
+<div id="photoMenu">
+  <button class="photo-menu-opt" onclick="triggerPhotoCapture()"><i class="ti ti-camera"></i>Take Photo</button>
+  <button class="photo-menu-opt" onclick="triggerPhotoLibrary()"><i class="ti ti-photo"></i>Photo Library</button>
+  <button class="photo-menu-cancel" onclick="closePhotoMenu()">Cancel</button>
 </div>
 
 <!-- BOTTOM TAB BAR -->
@@ -1075,7 +1092,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.6.3';
+  const APP_VERSION = 'v2.6.4';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -2017,12 +2034,20 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     listEl.innerHTML = allFoods.map(f => {
       const mealObj = MEALS.find(m => m.key === f.meal);
       const tag = mealObj ? `<span class="sheet-food-meal-tag">${mealObj.label}</span>` : '';
+      const qty = getSavedFoodCount(f.id);
+      const ctrl = qty > 0
+        ? `<div class="sf-qty-ctrl">
+            <button class="sf-qty-btn" onclick="removeSavedFoodFromStaging('${f.id}')">−</button>
+            <span class="sf-qty-num">${qty}</span>
+            <button class="sf-qty-btn sf-qty-add" onclick="addSavedFoodToStaging('${f.id}')">+</button>
+           </div>`
+        : `<button class="sheet-food-add-btn" onclick="addSavedFoodToStaging('${f.id}')" aria-label="Add ${escHtml(f.name)}">+</button>`;
       return `<div class="sheet-food-row">
         <div style="flex:1">
           <div class="sheet-food-name">${escHtml(f.name)}${tag}</div>
           <div class="sheet-food-meta">${escHtml(f.serving_size || '1 serving')} · ${f.calories} cal · ${f.protein_g}g protein</div>
         </div>
-        <button class="sheet-food-add-btn" onclick="addSavedFoodToStaging('${f.id}')" aria-label="Add ${escHtml(f.name)}">+</button>
+        ${ctrl}
       </div>`;
     }).join('');
   }
@@ -2034,9 +2059,24 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
       name: food.name, calories: food.calories, protein_g: food.protein_g,
       note: food.serving_size || '', meal: sheetMeal,
       quantity: 1, quantity_unit: food.serving_size || 'serving',
-      cal_per_unit: food.calories, protein_per_unit: food.protein_g
+      cal_per_unit: food.calories, protein_per_unit: food.protein_g,
+      _savedFoodId: id
     });
     renderResultsList();
+    renderSheetFoods();
+  }
+
+  function removeSavedFoodFromStaging(id) {
+    const idx = sheetParsedItems.map(x => x._savedFoodId).lastIndexOf(id);
+    if (idx !== -1) {
+      sheetParsedItems.splice(idx, 1);
+      renderResultsList();
+      renderSheetFoods();
+    }
+  }
+
+  function getSavedFoodCount(id) {
+    return sheetParsedItems.filter(x => x._savedFoodId === id).length;
   }
 
   // ---- SHEET PHOTO ----
@@ -2055,9 +2095,10 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     grid.style.display = 'flex';
     if (hint) {
       hint.style.display = 'block';
-      hint.textContent = sheetImages.length === 1
-        ? '📷 1 photo ready — add a note or hit Analyze'
-        : '📷 ' + sheetImages.length + ' photos ready';
+      hint.innerHTML = '<i class="ti ti-camera" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>' +
+        (sheetImages.length === 1
+          ? '1 photo ready — add a note or hit Analyze'
+          : sheetImages.length + ' photos ready');
     }
     if (btn) btn.classList.add('has-photo');
     grid.innerHTML = sheetImages.map((img, i) =>
@@ -2091,6 +2132,26 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   function clearSingleSheetPhoto(i) { sheetImages.splice(i, 1); renderSheetPhotoGrid(); }
 
   // ---- ANALYZE SHEET ----
+
+  function openPhotoMenu() {
+    document.getElementById('photoMenuOverlay').style.display = 'block';
+    document.getElementById('photoMenu').style.display = 'block';
+  }
+  function closePhotoMenu() {
+    document.getElementById('photoMenuOverlay').style.display = 'none';
+    document.getElementById('photoMenu').style.display = 'none';
+  }
+  function triggerPhotoCapture() {
+    closePhotoMenu();
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*'; inp.capture = 'environment';
+    inp.onchange = handleSheetPhoto;
+    inp.click();
+  }
+  function triggerPhotoLibrary() {
+    closePhotoMenu();
+    document.getElementById('sheetPhotoInput').click();
+  }
 
   async function analyzeSheet() {
     const s = loadSettings();
@@ -2175,8 +2236,6 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
         cb.querySelector('.ai-label').style.color = '';
         document.getElementById('sheetClaudeText').textContent = sheetClaudeResponse;
         renderResultsList();
-        const analyzeBtn = document.getElementById('sheetAnalyzeBtn');
-        if (analyzeBtn) analyzeBtn.textContent = 'Re-analyze';
       } else {
         const cb3 = document.getElementById('sheetClaudeBlock');
         cb3.style.display = 'block';
@@ -2217,6 +2276,17 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     resultsArea.style.display = 'block';
     if (reanalyzeLabel) reanalyzeLabel.style.display = 'block';
     updateLvPinned();
+    const aBtn = document.getElementById('sheetAnalyzeBtn');
+    if (aBtn) {
+      if (sheetParsedItems.length > 0) {
+        aBtn.className = 'lv-secondary-btn';
+        aBtn.textContent = 'Re-analyze';
+      } else {
+        aBtn.className = 'lv-primary-btn';
+        aBtn.style.marginTop = '8px';
+        aBtn.textContent = 'Analyze';
+      }
+    }
   }
 
   function deleteSheetItem(i) {
@@ -2226,6 +2296,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
       sheetClaudeResponse = '';
     }
     renderResultsList();
+    renderSheetFoods();
   }
 
   function commitSheet() {
