@@ -280,7 +280,7 @@
   }
   #sheetPhotoBtn i { font-size: 18px; color: var(--accent); }
   #sheetPhotoBtn.has-photo i { color: var(--accent2); }
-  #lvPinned { padding: 10px 16px env(safe-area-inset-bottom, 24px); flex-shrink: 0; }
+  #lvPinned { padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 20px); flex-shrink: 0; }
   .lv-primary-btn {
     background: var(--accent); color: #0C0C0E; border: none;
     border-radius: var(--r); font-family: 'Inter', sans-serif;
@@ -321,7 +321,7 @@
   .sheet-item-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
   .sheet-item-meta { font-size: 11px; color: var(--muted); }
   .sheet-food-row {
-    background: var(--surface2); border-radius: var(--r-sm);
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r-sm);
     padding: 10px 12px; margin-bottom: 7px;
     display: flex; align-items: center; gap: 10px;
   }
@@ -376,12 +376,9 @@
     font-size: 14px; display: flex; align-items: center; justify-content: center;
   }
   .photo-thumb-clear:hover { color: var(--danger); }
-  .photo-hint { font-size: 12px; color: var(--accent2); margin-bottom: 8px; font-weight: 500; display: none; }
-  #photoMenuOverlay { position: fixed; inset: 0; z-index: 70; background: transparent; display: none; }
-  #photoMenu { position: fixed; z-index: 71; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 4px; width: 210px; display: none; box-shadow: 0 8px 28px rgba(0,0,0,0.6); }
-  .photo-menu-opt { display: flex; align-items: center; gap: 11px; width: 100%; padding: 12px 14px; border: none; background: none; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; color: var(--text); border-radius: 10px; text-align: left; }
-  .photo-menu-opt:active { background: var(--surface2); }
-  .photo-menu-opt i { font-size: 18px; color: var(--accent); width: 20px; text-align: center; }
+  #sheetPhotoArea { padding: 10px 14px 10px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .photo-hint { font-size: 12px; color: var(--accent2); margin-bottom: 8px; font-weight: 500; }
+
   .input-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 8px; }
   textarea {
     flex: 1; background: var(--surface); border: 1.5px solid var(--border);
@@ -1040,11 +1037,13 @@
       </div>
       <div id="lvReanalyzeLabel" style="display:none">RE-ANALYZE</div>
       <div class="lv-input-card">
-        <div class="photo-hint" id="sheetPhotoHint"></div>
-        <div class="photo-grid" id="sheetPhotoGrid" style="display:none"></div>
+        <div id="sheetPhotoArea" style="display:none">
+          <div class="photo-hint" id="sheetPhotoHint"></div>
+          <div class="photo-grid" id="sheetPhotoGrid"></div>
+        </div>
         <textarea id="sheetInput" placeholder="Describe what you ate, or snap a photo…"></textarea>
         <div class="lv-input-footer">
-          <button id="sheetPhotoBtn" onclick="openPhotoMenu()" aria-label="Add photo">
+          <button id="sheetPhotoBtn" onclick="document.getElementById('sheetPhotoInput').click()" aria-label="Add photo">
             <i class="ti ti-camera" aria-hidden="true"></i>Add photo
           </button>
         </div>
@@ -1058,12 +1057,6 @@
   </div>
   <div id="lvPinned"></div>
 </div>
-<div id="photoMenuOverlay" onclick="closePhotoMenu()"></div>
-<div id="photoMenu">
-  <button class="photo-menu-opt" onclick="triggerPhotoCapture()"><i class="ti ti-camera"></i>Take Photo</button>
-  <button class="photo-menu-opt" onclick="triggerPhotoLibrary()"><i class="ti ti-photo"></i>Photo Library</button>
-</div>
-
 <!-- BOTTOM TAB BAR -->
 <nav class="tab-bar">
   <button class="tab-item active" onclick="switchTab('today')">
@@ -1090,7 +1083,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.6.6';
+  const APP_VERSION = 'v2.6.7';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1922,6 +1915,8 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     if (rl) rl.style.display = 'none';
     renderSheetPhotoGrid();
     updateLvPinned();
+    const aBtn = document.getElementById('sheetAnalyzeBtn');
+    if (aBtn) { aBtn.className = 'lv-primary-btn'; aBtn.style.marginTop = '8px'; aBtn.textContent = 'Analyze'; }
     document.getElementById('logView').classList.add('open');
     lockScroll();
     // no auto-focus on open — user taps to open keyboard
@@ -2082,23 +2077,20 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   function renderSheetPhotoGrid() {
     const grid = document.getElementById('sheetPhotoGrid');
     const hint = document.getElementById('sheetPhotoHint');
+    const area = document.getElementById('sheetPhotoArea');
     const btn = document.getElementById('sheetPhotoBtn');
     if (!grid) return;
     if (sheetImages.length === 0) {
-      grid.style.display = 'none';
-      if (hint) hint.style.display = 'none';
+      if (area) area.style.display = 'none';
       if (btn) btn.classList.remove('has-photo');
       return;
     }
-    grid.style.display = 'flex';
-    if (hint) {
-      hint.style.display = 'block';
-      hint.innerHTML = '<i class="ti ti-camera" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>' +
-        (sheetImages.length === 1
-          ? '1 photo ready — add a note or hit Analyze'
-          : sheetImages.length + ' photos ready');
-    }
+    if (area) area.style.display = 'block';
+    if (hint) hint.innerHTML =
+      '<i class="ti ti-camera" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>' +
+      (sheetImages.length === 1 ? '1 photo ready — add a note or hit Analyze' : sheetImages.length + ' photos ready');
     if (btn) btn.classList.add('has-photo');
+    grid.style.display = 'flex';
     grid.innerHTML = sheetImages.map((img, i) =>
       `<div class="photo-thumb">
         <img src="${img.previewURL}" alt="Photo ${i+1}" />
@@ -2131,41 +2123,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
 
   // ---- ANALYZE SHEET ----
 
-  function openPhotoMenu() {
-    const btn = document.getElementById('sheetPhotoBtn');
-    const menu = document.getElementById('photoMenu');
-    document.getElementById('photoMenuOverlay').style.display = 'block';
-    menu.style.display = 'block';
-    // position above the button
-    const rect = btn.getBoundingClientRect();
-    const menuW = 210;
-    const menuH = menu.offsetHeight || 110;
-    let left = rect.left;
-    if (left + menuW > window.innerWidth - 12) left = window.innerWidth - menuW - 12;
-    if (left < 12) left = 12;
-    const top = rect.top - menuH - 8;
-    menu.style.top = Math.max(top, 60) + 'px';
-    menu.style.left = left + 'px';
-  }
-  function closePhotoMenu() {
-    document.getElementById('photoMenuOverlay').style.display = 'none';
-    document.getElementById('photoMenu').style.display = 'none';
-  }
-  function _triggerFileInput(capture) {
-    closePhotoMenu();
-    const inp = document.createElement('input');
-    inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
-    if (capture) inp.capture = 'environment';
-    inp.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
-    document.body.appendChild(inp);
-    inp.addEventListener('change', function(e) {
-      handleSheetPhoto(e);
-      setTimeout(function() { document.body.removeChild(inp); }, 200);
-    });
-    inp.click();
-  }
-  function triggerPhotoCapture()  { _triggerFileInput(true);  }
-  function triggerPhotoLibrary()  { _triggerFileInput(false); }
+
 
   async function analyzeSheet() {
     const s = loadSettings();
