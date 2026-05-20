@@ -728,6 +728,21 @@
     border: 1px solid var(--border); padding: 16px; margin-top: 14px;
     animation: fadeUp 0.22s ease;
   }
+  .sf-summary-card {
+    background: var(--surface); border-radius: var(--r);
+    border: 1px solid var(--border); padding: 16px; margin-top: 14px;
+    animation: fadeUp 0.22s ease;
+  }
+  .sf-summary-totals {
+    display: flex; gap: 8px; margin: 10px 0 14px;
+  }
+  .sf-total-badge {
+    flex: 1; background: var(--surface2); border-radius: var(--r-sm);
+    padding: 8px 10px; text-align: center;
+    font-size: 15px; font-weight: 700; font-family: 'Inter', sans-serif;
+  }
+  .sf-total-badge.cal { color: var(--accent); }
+  .sf-total-badge.pro { color: var(--accent2); }
   .sf-name-input {
     background: transparent; border: none;
     border-bottom: 1.5px solid var(--border);
@@ -1122,7 +1137,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.7.2';
+  const APP_VERSION = 'v2.8.0';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1152,6 +1167,9 @@
   let sfDraft = { name: '', calories: 0, protein_g: 0, serving_size: '1 serving', meal: 'breakfast' };
   let sfPendingImages = [];
   let sfAnalyzed = false;
+  let sfParsedItems = [];
+  let sfFinalName = '';
+  let editModalSource = 'sheet';
 
   function escHtml(str) {
     return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1204,19 +1222,16 @@
 
   function renderFoodForm() {
     const isEdit = editingFoodId !== null;
-    const resultHTML = sfAnalyzed ? `
-      <div class="sf-result-card">
-        <p class="sf-field-label" style="margin-bottom:8px">${isEdit ? 'Edit item details:' : 'Edit anything before saving:'}</p>
-        <input type="text" id="sfName" class="sf-name-input" value="${escHtml(sfDraft.name)}" placeholder="Item name" />
-        <div class="sf-macro-grid">
-          <div class="sf-macro-item">
-            <div class="sf-macro-label">Calories</div>
-            <input type="number" id="sfCal" class="sf-macro-input cal" value="${sfDraft.calories}" min="0" />
-          </div>
-          <div class="sf-macro-item">
-            <div class="sf-macro-label">Protein (g)</div>
-            <input type="number" id="sfPro" class="sf-macro-input pro" value="${sfDraft.protein_g}" min="0" step="0.1" />
-          </div>
+    const hasResults = sfParsedItems.length > 0;
+    const totalCal = sfParsedItems.reduce((s, x) => s + (x.calories || 0), 0);
+    const totalPro = Math.round(sfParsedItems.reduce((s, x) => s + (x.protein_g || 0), 0) * 10) / 10;
+
+    const summaryHTML = hasResults ? `
+      <div class="sf-summary-card">
+        <input type="text" id="sfFinalNameInput" class="sf-name-input" value="${escHtml(sfFinalName)}" placeholder="Name this item…" />
+        <div class="sf-summary-totals">
+          <span class="sf-total-badge cal">${totalCal} cal</span>
+          <span class="sf-total-badge pro">${totalPro}g protein</span>
         </div>
         <label class="sf-field-label">Serving size</label>
         <button class="sf-serving-btn" onclick="openServingPicker()" type="button">
@@ -1225,8 +1240,8 @@
         </button>
         <label class="sf-field-label">Default meal group</label>
         <div class="meal-pills" id="sfMealPills" style="margin-bottom:16px"></div>
-        <button class="save-btn" onclick="saveFood()">Save Item</button>
-        ${isEdit ? `<button class="sf-delete-btn" onclick="confirmDeleteFood('${editingFoodId}')">Delete item</button>` : ''}
+        <button class="lv-primary-btn" onclick="saveFood()">Save Item</button>
+        ${isEdit ? `<button class="lv-secondary-btn" onclick="confirmDeleteFood('${editingFoodId}')" style="margin-top:8px;color:var(--danger);border-color:var(--danger)">Delete item</button>` : ''}
       </div>` : '';
 
     return `
@@ -1237,21 +1252,30 @@
         </button>
         <span class="sf-form-title">${isEdit ? 'Edit Item' : 'New Item'}</span>
       </div>
-      <div style="background:var(--surface);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;">
-        <textarea id="sfInput" placeholder="Describe it… e.g. Dunkin iced coffee with oat milk, one pump vanilla" style="background:transparent;border:none;padding:13px 15px;width:100%;font-family:'Inter',sans-serif;font-size:14px;color:var(--text);resize:none;outline:none;min-height:88px;line-height:1.5;display:block;"></textarea>
-        <div style="display:flex;gap:8px;padding:8px 12px;border-top:1px solid var(--border);">
-          <button class="photo-btn" id="sfPhotoBtn" onclick="document.getElementById('sfPhotoInput').click()" style="width:40px;height:38px;" title="Add photo">
-            <i class="ti ti-camera" aria-hidden="true" style="font-size:18px"></i>
+      <div id="sfResultsArea" style="display:${hasResults ? 'block' : 'none'}">
+        <div id="sfResultsList"></div>
+      </div>
+      <div id="sfReanalyzeLabel" style="display:${hasResults ? 'block' : 'none'}">RE-ANALYZE</div>
+      <div class="lv-input-card">
+        <div id="sfPhotoArea" style="display:none">
+          <div class="photo-hint" id="sfPhotoHint"></div>
+          <div class="photo-grid" id="sfPhotoGrid"></div>
+        </div>
+        <textarea id="sfInput" placeholder="Describe it… e.g. Dunkin iced coffee with oat milk, one pump vanilla"></textarea>
+        <div class="lv-input-footer">
+          <button id="sfPhotoBtn" onclick="(function(){var inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.multiple=true;inp.onchange=function(e){handleSfPhoto(e)};inp.click();})()" aria-label="Add photo">
+            <i class="ti ti-camera" aria-hidden="true"></i>Add photo
           </button>
-          <input type="file" id="sfPhotoInput" accept="image/*" multiple onchange="handleSfPhoto(event)" style="display:none" />
-          <button onclick="analyzeFood()" id="sfAnalyzeBtn" class="log-btn" style="font-size:14px;padding:10px;">Analyze</button>
         </div>
       </div>
-      ${resultHTML}`;
+      <button class="${hasResults ? 'lv-secondary-btn' : 'lv-primary-btn'}" id="sfAnalyzeBtn" onclick="analyzeFood()" style="margin-top:8px">${hasResults ? 'Re-analyze' : 'Analyze'}</button>
+      ${summaryHTML}`;
   }
 
   function attachFoodFormHandlers() {
     renderSfMealPills(sfDraft.meal);
+    renderSfResultsList();
+    if (sfPendingImages.length > 0) renderSfPhotoGrid();
   }
 
   function renderSfMealPills(selected) {
@@ -1272,6 +1296,8 @@
     editingFoodId = null;
     sfPendingImages = [];
     sfAnalyzed = false;
+    sfParsedItems = [];
+    sfFinalName = '';
     sfDraft = { name: '', calories: 0, protein_g: 0, serving_size: '1 serving', meal: mealKey || 'breakfast' };
     renderMyFoods();
   }
@@ -1283,6 +1309,16 @@
     editingFoodId = id;
     sfPendingImages = [];
     sfAnalyzed = true;
+    sfFinalName = food.name;
+    sfParsedItems = [{
+      name: food.name,
+      calories: food.calories,
+      protein_g: food.protein_g,
+      quantity: 1,
+      quantity_unit: food.serving_size || '1 serving',
+      cal_per_unit: food.calories,
+      protein_per_unit: food.protein_g
+    }];
     sfDraft = { name: food.name, calories: food.calories, protein_g: food.protein_g, serving_size: food.serving_size || '1 serving', meal: food.meal };
     renderMyFoods();
   }
@@ -1292,78 +1328,81 @@
     editingFoodId = null;
     sfPendingImages = [];
     sfAnalyzed = false;
+    sfParsedItems = [];
+    sfFinalName = '';
     renderMyFoods();
   }
 
   async function analyzeFood() {
     const input = document.getElementById('sfInput');
-    const btn = document.getElementById('sfAnalyzeBtn');
-    const text = input ? input.value.trim() : '';
+    const btn   = document.getElementById('sfAnalyzeBtn');
+    const text  = input ? input.value.trim() : '';
     if (!text && sfPendingImages.length === 0) return;
     if (!getApiKey()) { showToast('Add your API key in Settings first'); return; }
     btn.disabled = true;
     btn.textContent = 'Analyzing…';
 
-    const systemPrompt = `You are a nutrition assistant. Analyze this food item for a personal food library.
+    const systemPrompt = `You are a nutrition assistant. The user wants to save a custom food item to their personal library.
 
 Respond with JSON ONLY. No markdown, no backticks.
-Format: {"name":"Food name","calories":number,"protein_g":number,"serving_size":"X unit","response":"1 sentence note"}
+Format: {"name":"Suggested overall name for the item","items":[{"name":"...","calories":number,"protein_g":number,"quantity":number,"quantity_unit":"...","cal_per_unit":number,"protein_per_unit":number}]}
 
-For serving_size, pick the single closest match from this exact list:
-1 serving, 1 cup, 1 slice, 1 piece, 1 scoop, 2 tbsp, 1 oz, 2 oz, 4 oz, 6 oz, 8 oz, 12 fl oz, 16 fl oz, 1 bar, 1 packet
-
-Return calories and protein for exactly one unit of the chosen serving_size.`;
+Break the food into its components (ingredients, add-ins, etc.). Each item must have all fields.
+quantity_unit describes the portion (e.g. "serving", "oz", "cup", "pump", "tbsp").
+cal_per_unit and protein_per_unit equal calories/protein_g when quantity is 1.
+The top-level "name" should be a natural overall label for the combined item.`;
 
     const userContent = sfPendingImages.length > 0
       ? [...sfPendingImages.map(img => ({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } })),
-         { type: 'text', text: text || 'What is this food? Give name, calories, protein, and serving size.' }]
+         { type: 'text', text: text || 'What is this food? List all components with calories and protein.' }]
       : text;
 
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': getApiKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 400, system: systemPrompt, messages: [{ role: 'user', content: userContent }] })
+        headers: { 'x-api-key': getApiKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 800, system: systemPrompt, messages: [{ role: 'user', content: userContent }] })
       });
       const data = await res.json();
       if (!res.ok) {
         showToast('API error: ' + ((data.error && data.error.message) || res.status));
-        const b = document.getElementById('sfAnalyzeBtn');
-        if (b) { b.disabled = false; b.textContent = 'Analyze'; }
+        btn.disabled = false; btn.textContent = sfParsedItems.length > 0 ? 'Re-analyze' : 'Analyze';
         return;
       }
-      const rawText = data.content.map(b => b.text || '').join('');
+      const rawText = data.content[0].text.trim();
       let parsed;
       try { parsed = JSON.parse(rawText); }
-      catch { const m = rawText.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : null; }
-      if (parsed && parsed.name) {
-        const matched = SERVING_SIZES.find(s => s.toLowerCase() === (parsed.serving_size || '').toLowerCase()) || '1 serving';
-        sfDraft = {
-          name: parsed.name,
-          calories: Math.round(parsed.calories || 0),
-          protein_g: Math.round((parsed.protein_g || 0) * 10) / 10,
-          serving_size: matched,
-          meal: sfDraft.meal,
-        };
+      catch(e) { const m = rawText.match(/\{[\s\S]*\}/); try { parsed = m ? JSON.parse(m[0]) : null; } catch(e2) { parsed = null; } }
+      if (parsed && parsed.items && parsed.items.length > 0) {
+        sfParsedItems = parsed.items.map(item => ({
+          name: item.name,
+          calories: Math.round(item.calories || 0),
+          protein_g: Math.round((item.protein_g || 0) * 10) / 10,
+          quantity: item.quantity || 1,
+          quantity_unit: item.quantity_unit || 'serving',
+          cal_per_unit: item.cal_per_unit || item.calories,
+          protein_per_unit: item.protein_per_unit || item.protein_g
+        }));
+        sfFinalName = parsed.name || sfParsedItems[0].name;
         sfAnalyzed = true;
         renderMyFoods();
       } else {
         showToast('Could not parse — try rephrasing');
-        const b = document.getElementById('sfAnalyzeBtn');
-        if (b) { b.disabled = false; b.textContent = 'Analyze'; }
+        btn.disabled = false; btn.textContent = sfParsedItems.length > 0 ? 'Re-analyze' : 'Analyze';
       }
     } catch(err) {
       showToast('Error: ' + (err && err.message ? err.message : 'Unknown'));
-      const b = document.getElementById('sfAnalyzeBtn');
-      if (b) { b.disabled = false; b.textContent = 'Analyze'; }
+      btn.disabled = false; btn.textContent = sfParsedItems.length > 0 ? 'Re-analyze' : 'Analyze';
     }
   }
 
   function saveFood() {
-    const name = (document.getElementById('sfName') && document.getElementById('sfName').value.trim()) || sfDraft.name;
-    const cal = parseInt((document.getElementById('sfCal') && document.getElementById('sfCal').value) || sfDraft.calories) || 0;
-    const pro = parseFloat((document.getElementById('sfPro') && document.getElementById('sfPro').value) || sfDraft.protein_g) || 0;
+    const nameInput = document.getElementById('sfFinalNameInput');
+    const name = (nameInput && nameInput.value.trim()) || sfFinalName;
     if (!name) { showToast('Add a name first'); return; }
+    if (sfParsedItems.length === 0) { showToast('Analyze the food first'); return; }
+    const cal = sfParsedItems.reduce((s, x) => s + (x.calories || 0), 0);
+    const pro = Math.round(sfParsedItems.reduce((s, x) => s + (x.protein_g || 0), 0) * 10) / 10;
     const foods = loadSavedFoods();
     if (editingFoodId) {
       const idx = foods.findIndex(f => f.id === editingFoodId);
@@ -1458,6 +1497,32 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   }
 
   // ---- PHOTO for My Foods ----
+  function renderSfPhotoGrid() {
+    const grid = document.getElementById('sfPhotoGrid');
+    const hint = document.getElementById('sfPhotoHint');
+    const area = document.getElementById('sfPhotoArea');
+    const btn  = document.getElementById('sfPhotoBtn');
+    if (!grid) return;
+    if (sfPendingImages.length === 0) {
+      if (area) area.style.display = 'none';
+      if (btn) btn.classList.remove('has-photo');
+      return;
+    }
+    if (area) area.style.display = 'block';
+    if (hint) hint.innerHTML =
+      '<i class="ti ti-camera" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>' +
+      (sfPendingImages.length === 1 ? '1 photo ready' : sfPendingImages.length + ' photos ready');
+    if (btn) btn.classList.add('has-photo');
+    grid.style.display = 'flex';
+    grid.innerHTML = sfPendingImages.map((img, i) =>
+      `<div class="photo-thumb">
+        <img src="${img.previewURL}" alt="Photo ${i+1}" />
+        <button class="photo-thumb-clear" onclick="clearSfPhoto(${i})">&#215;</button>
+      </div>`).join('');
+  }
+
+  function clearSfPhoto(i) { sfPendingImages.splice(i, 1); renderSfPhotoGrid(); }
+
   function handleSfPhoto(event) {
     const files = Array.from(event.target.files);
     if (!files.length) return;
@@ -1468,14 +1533,75 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
       reader.onload = e => {
         compressImage(e.target.result, (data, mediaType) => {
           sfPendingImages.push({ data, mediaType, previewURL: e.target.result });
-          const btn = document.getElementById('sfPhotoBtn');
-          if (btn) btn.classList.add('has-photo');
-          showToast(sfPendingImages.length + ' photo' + (sfPendingImages.length > 1 ? 's' : '') + ' ready');
+          renderSfPhotoGrid();
         });
       };
       reader.readAsDataURL(file);
     });
     event.target.value = '';
+  }
+
+  function renderSfResultsList() {
+    const resultsArea    = document.getElementById('sfResultsArea');
+    const resultsList    = document.getElementById('sfResultsList');
+    const reanalyzeLabel = document.getElementById('sfReanalyzeLabel');
+    if (!resultsArea || !resultsList) return;
+    if (sfParsedItems.length === 0) {
+      resultsArea.style.display = 'none';
+      if (reanalyzeLabel) reanalyzeLabel.style.display = 'none';
+      const aBtn = document.getElementById('sfAnalyzeBtn');
+      if (aBtn) { aBtn.className = 'lv-primary-btn'; aBtn.textContent = 'Analyze'; aBtn.style.marginTop = '8px'; }
+      return;
+    }
+    resultsList.innerHTML = sfParsedItems.map((item, i) =>
+      `<div class="sheet-result-row" onclick="editSfItem(${i})">
+        <div class="sheet-result-info">
+          <div class="sheet-result-name">${escHtml(item.name)}</div>
+          <div class="sheet-result-meta">${item.quantity} ${escHtml(item.quantity_unit)} · ${item.calories} cal · ${item.protein_g}g protein</div>
+        </div>
+        <button class="sheet-result-del" onclick="event.stopPropagation();deleteSfItem(${i})" aria-label="Remove item">&#215;</button>
+      </div>`
+    ).join('');
+    resultsArea.style.display = 'block';
+    if (reanalyzeLabel) reanalyzeLabel.style.display = 'block';
+    const aBtn = document.getElementById('sfAnalyzeBtn');
+    if (aBtn) { aBtn.className = 'lv-secondary-btn'; aBtn.textContent = 'Re-analyze'; }
+    // Update totals in summary card if visible
+    const totalCal = sfParsedItems.reduce((s, x) => s + (x.calories || 0), 0);
+    const totalPro = Math.round(sfParsedItems.reduce((s, x) => s + (x.protein_g || 0), 0) * 10) / 10;
+    const calEl = document.querySelector('.sf-summary-card .sf-total-badge.cal');
+    const proEl = document.querySelector('.sf-summary-card .sf-total-badge.pro');
+    if (calEl) calEl.textContent = totalCal + ' cal';
+    if (proEl) proEl.textContent = totalPro + 'g protein';
+  }
+
+  function editSfItem(i) {
+    const item = sfParsedItems[i];
+    if (!item) return;
+    editModalSource = 'sf';
+    editModalIndex = i;
+    const qty = item.quantity || 1;
+    stagingEditCalPer = item.cal_per_unit != null ? item.cal_per_unit : item.calories / qty;
+    stagingEditProPer = item.protein_per_unit != null ? item.protein_per_unit : item.protein_g / qty;
+    document.getElementById('emName').value = item.name;
+    document.getElementById('emQty').value  = qty;
+    document.getElementById('emQtyUnit').textContent = item.quantity_unit || 'serving';
+    document.getElementById('emCal').value  = item.calories;
+    document.getElementById('emPro').value  = item.protein_g;
+    document.getElementById('editItemOverlay').style.display = 'block';
+    document.getElementById('editItemModal').style.display  = 'block';
+    setTimeout(function() { document.getElementById('emName').focus(); }, 80);
+  }
+
+  function deleteSfItem(i) {
+    sfParsedItems.splice(i, 1);
+    if (sfParsedItems.length === 0) {
+      sfFinalName = '';
+      sfAnalyzed = false;
+      renderMyFoods();
+      return;
+    }
+    renderSfResultsList();
   }
 
   // ---- MEAL STATE ----
@@ -2313,6 +2439,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   function editSheetItem(i) {
     const item = sheetParsedItems[i];
     if (!item) return;
+    editModalSource = 'sheet';
     editModalIndex = i;
     const qty = item.quantity || 1;
     stagingEditCalPer = item.cal_per_unit != null ? item.cal_per_unit : item.calories / qty;
@@ -2347,12 +2474,13 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   }
 
   function saveEditModal() {
-    if (editModalIndex < 0 || editModalIndex >= sheetParsedItems.length) { closeEditModal(); return; }
     const name = document.getElementById('emName').value.trim();
     const qty  = parseFloat(document.getElementById('emQty').value) || 1;
     const cal  = parseInt(document.getElementById('emCal').value)   || 0;
     const pro  = parseFloat(document.getElementById('emPro').value) || 0;
-    const item = sheetParsedItems[editModalIndex];
+    const arr  = editModalSource === 'sf' ? sfParsedItems : sheetParsedItems;
+    if (editModalIndex < 0 || editModalIndex >= arr.length) { closeEditModal(); return; }
+    const item = arr[editModalIndex];
     if (name) item.name = name;
     item.quantity         = qty;
     item.calories         = Math.max(0, cal);
@@ -2360,7 +2488,11 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     item.cal_per_unit     = Math.round((cal / qty) * 10) / 10;
     item.protein_per_unit = Math.round((pro / qty) * 10) / 10;
     closeEditModal();
-    renderResultsList();
+    if (editModalSource === 'sf') {
+      renderSfResultsList();
+    } else {
+      renderResultsList();
+    }
   }
 
   function deleteSheetItem(i) {
