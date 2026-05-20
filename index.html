@@ -316,16 +316,7 @@
   }
   .sheet-result-row { cursor: pointer; }
   #editItemOverlay { position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,0.7); }
-  #editItemModal { position: fixed; z-index: 81; left: 20px; right: 20px; top: 50%; transform: translateY(-50%); background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: 0 16px 48px rgba(0,0,0,0.7); }
-  .em-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
-  .em-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
-  .em-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-  .em-input { background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--r-sm); color: var(--text); font-family: 'Inter', sans-serif; font-size: 15px; padding: 10px 12px; outline: none; width: 100%; box-sizing: border-box; }
-  .em-input:focus { border-color: rgba(52,211,153,0.5); }
-  .em-row { display: flex; gap: 10px; margin-bottom: 12px; }
-  .em-actions { display: flex; gap: 10px; margin-top: 4px; }
-  .em-cancel { flex: 1; padding: 13px; border: 1.5px solid var(--border); background: none; border-radius: var(--r); color: var(--muted); font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; }
-  .em-save { flex: 2; padding: 13px; border: none; background: var(--accent); border-radius: var(--r); color: #0C0C0E; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; }
+  #editItemModal { position: fixed; z-index: 81; left: 16px; right: 16px; top: 50%; transform: translateY(-50%); }
   #sheetMyFoodsView { overflow-y: auto; padding: 6px 0; }
   .sheet-item-card {
     background: var(--surface2); border-radius: var(--r-sm);
@@ -1074,24 +1065,34 @@
 </div>
 <div id="editItemOverlay" style="display:none" onclick="closeEditModal()"></div>
 <div id="editItemModal" style="display:none">
-  <div class="em-title">Edit Item</div>
-  <div class="em-field">
-    <div class="em-label">Name</div>
-    <input class="em-input" id="emName" type="text" />
-  </div>
-  <div class="em-row">
-    <div class="em-field" style="flex:1">
-      <div class="em-label">Calories</div>
-      <input class="em-input" id="emCal" type="number" inputmode="numeric" />
+  <div class="edit-modal">
+    <div class="edit-modal-hdr">
+      <input id="emName" class="edit-num-input" style="font-size:14px;font-weight:700;flex:1;color:var(--text)" type="text" placeholder="Food name" />
+      <button class="edit-close-btn" onclick="closeEditModal()" style="margin-left:8px">&#215;</button>
     </div>
-    <div class="em-field" style="flex:1">
-      <div class="em-label">Protein (g)</div>
-      <input class="em-input" id="emPro" type="number" inputmode="decimal" />
+    <div class="edit-field">
+      <label class="edit-field-label">Servings / quantity</label>
+      <div class="edit-qty-row">
+        <button class="edit-step-btn" onclick="stepStagingQty(-1)">&#8722;</button>
+        <input type="number" id="emQty" class="edit-num-input" min="0.5" step="0.5" oninput="recalcStagingEdit()" />
+        <button class="edit-step-btn" onclick="stepStagingQty(1)">&#43;</button>
+        <span class="edit-qty-unit" id="emQtyUnit"></span>
+      </div>
     </div>
-  </div>
-  <div class="em-actions">
-    <button class="em-cancel" onclick="closeEditModal()">Cancel</button>
-    <button class="em-save" onclick="saveEditModal()">Save</button>
+    <div class="edit-macro-row">
+      <div class="edit-field">
+        <label class="edit-field-label">Calories</label>
+        <input type="number" id="emCal" class="edit-num-input cal" min="0" />
+      </div>
+      <div class="edit-field">
+        <label class="edit-field-label">Protein (g)</label>
+        <input type="number" id="emPro" class="edit-num-input pro" min="0" step="0.1" />
+      </div>
+    </div>
+    <div class="edit-actions">
+      <button class="edit-save-btn" onclick="saveEditModal()">Save changes</button>
+      <button class="edit-cancel-btn" onclick="closeEditModal()">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -1121,7 +1122,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.7.1';
+  const APP_VERSION = 'v2.7.2';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -2307,16 +2308,36 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     }
   }
 
+  let stagingEditCalPer = 0, stagingEditProPer = 0;
+
   function editSheetItem(i) {
     const item = sheetParsedItems[i];
     if (!item) return;
     editModalIndex = i;
+    const qty = item.quantity || 1;
+    stagingEditCalPer = item.cal_per_unit != null ? item.cal_per_unit : item.calories / qty;
+    stagingEditProPer = item.protein_per_unit != null ? item.protein_per_unit : item.protein_g / qty;
     document.getElementById('emName').value = item.name;
+    document.getElementById('emQty').value  = qty;
+    document.getElementById('emQtyUnit').textContent = item.quantity_unit || 'serving';
     document.getElementById('emCal').value  = item.calories;
     document.getElementById('emPro').value  = item.protein_g;
     document.getElementById('editItemOverlay').style.display = 'block';
     document.getElementById('editItemModal').style.display  = 'block';
     setTimeout(function() { document.getElementById('emName').focus(); }, 80);
+  }
+
+  function stepStagingQty(dir) {
+    const input = document.getElementById('emQty');
+    const val = parseFloat(input.value) || 1;
+    input.value = Math.max(0.5, Math.round((val + dir) * 2) / 2);
+    recalcStagingEdit();
+  }
+
+  function recalcStagingEdit() {
+    const qty = parseFloat(document.getElementById('emQty').value) || 1;
+    document.getElementById('emCal').value = Math.round(qty * stagingEditCalPer);
+    document.getElementById('emPro').value = Math.round(qty * stagingEditProPer * 10) / 10;
   }
 
   function closeEditModal() {
@@ -2328,13 +2349,16 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   function saveEditModal() {
     if (editModalIndex < 0 || editModalIndex >= sheetParsedItems.length) { closeEditModal(); return; }
     const name = document.getElementById('emName').value.trim();
-    const cal  = parseFloat(document.getElementById('emCal').value) || 0;
+    const qty  = parseFloat(document.getElementById('emQty').value) || 1;
+    const cal  = parseInt(document.getElementById('emCal').value)   || 0;
     const pro  = parseFloat(document.getElementById('emPro').value) || 0;
-    if (name) sheetParsedItems[editModalIndex].name = name;
-    sheetParsedItems[editModalIndex].calories          = Math.max(0, cal);
-    sheetParsedItems[editModalIndex].protein_g         = Math.max(0, pro);
-    sheetParsedItems[editModalIndex].cal_per_unit      = Math.max(0, cal);
-    sheetParsedItems[editModalIndex].protein_per_unit  = Math.max(0, pro);
+    const item = sheetParsedItems[editModalIndex];
+    if (name) item.name = name;
+    item.quantity         = qty;
+    item.calories         = Math.max(0, cal);
+    item.protein_g        = Math.max(0, pro);
+    item.cal_per_unit     = Math.round((cal / qty) * 10) / 10;
+    item.protein_per_unit = Math.round((pro / qty) * 10) / 10;
     closeEditModal();
     renderResultsList();
   }
