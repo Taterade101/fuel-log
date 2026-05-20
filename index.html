@@ -228,6 +228,20 @@
     transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
   }
   #logView.open { transform: translateX(0); }
+  #sfFormView {
+    position: fixed; inset: 0; z-index: 52;
+    background: var(--bg);
+    transform: translateX(100%);
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  #sfFormView.open { transform: translateX(0); }
+  #sfFormContent { padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 28px); }
+  .sf-section-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.05em; margin: 0 0 8px; }
+  .sf-combines-into { display: flex; align-items: center; gap: 10px; margin: 12px 0; }
+  .sf-combines-into span { font-size: 11px; font-weight: 600; color: var(--muted); white-space: nowrap; display: flex; align-items: center; gap: 5px; }
+  .sf-combines-into span i { font-size: 14px; }
+  .sf-combines-line { flex: 1; height: 1px; background: var(--border); }
   #lvHeader {
     display: flex; align-items: center;
     padding: 14px 16px 12px;
@@ -1079,6 +1093,7 @@
   </div>
   <div id="lvPinned"></div>
 </div>
+<div id="sfFormView"><div id="sfFormContent"></div></div>
 <div id="editItemOverlay" style="display:none" onclick="closeEditModal()"></div>
 <div id="editItemModal" style="display:none">
   <div class="edit-modal">
@@ -1089,13 +1104,13 @@
       </div>
       <button class="edit-close-btn" onclick="closeEditModal()" style="margin-left:8px;align-self:flex-start">&#215;</button>
     </div>
-    <div class="edit-macro-row" style="margin-bottom:10px">
-      <div class="edit-field">
-        <label class="edit-field-label" style="display:flex;align-items:center;gap:4px">Quantity <i class="ti ti-pencil" style="font-size:10px" aria-hidden="true"></i></label>
-        <div style="display:flex;align-items:center;gap:6px">
-          <input type="number" id="emQty" class="edit-num-input" min="0.5" step="0.5" style="flex:1" />
-          <span id="emQtyUnit" style="font-size:12px;color:var(--muted);white-space:nowrap;flex-shrink:0"></span>
-        </div>
+    <div class="edit-field">
+      <label class="edit-field-label" style="display:flex;align-items:center;gap:4px">Servings / quantity <i class="ti ti-pencil" style="font-size:10px" aria-hidden="true"></i></label>
+      <div class="edit-qty-row">
+        <button class="edit-step-btn" onclick="stepStagingQty(-1)">&#8722;</button>
+        <input type="number" id="emQty" class="edit-num-input" min="0.5" step="0.5" oninput="recalcStagingEdit()" />
+        <button class="edit-step-btn" onclick="stepStagingQty(1)">&#43;</button>
+        <span class="edit-qty-unit" id="emQtyUnit"></span>
       </div>
     </div>
     <div class="edit-macro-row">
@@ -1141,7 +1156,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.8.2';
+  const APP_VERSION = 'v2.9.0';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1180,12 +1195,14 @@
   }
 
   function renderMyFoods() {
-    const el = document.getElementById('myfoodsContent');
-    if (!el) return;
     if (myFoodsView === 'library') {
+      const el = document.getElementById('myfoodsContent');
+      if (!el) return;
       el.innerHTML = renderFoodsLibrary();
       attachSwipeHandlers();
     } else {
+      const el = document.getElementById('sfFormContent');
+      if (!el) return;
       el.innerHTML = renderFoodForm();
       attachFoodFormHandlers();
     }
@@ -1275,11 +1292,19 @@
         </button>
         <span class="sf-form-title">${isEdit ? 'Edit Item' : 'New Item'}</span>
       </div>
-      <div id="sfResultsArea" style="display:${hasResults ? 'block' : 'none'}">
-        <div id="sfResultsList"></div>
+      <div id="sfComponentsSection" style="display:${hasResults ? 'block' : 'none'}">
+        <div class="sf-section-label">COMPONENTS</div>
+        <div id="sfResultsArea">
+          <div id="sfResultsList"></div>
+        </div>
+        <div class="sf-combines-into">
+          <div class="sf-combines-line"></div>
+          <span><i class="ti ti-arrow-down" aria-hidden="true"></i> saves as one item</span>
+          <div class="sf-combines-line"></div>
+        </div>
       </div>
-      ${inputSectionHTML}
-      ${summaryHTML}`;
+      ${summaryHTML}
+      ${inputSectionHTML}`;
   }
 
   function attachFoodFormHandlers() {
@@ -1311,6 +1336,8 @@
     sfDraft = { name: '', calories: 0, protein_g: 0, serving_size: '1 serving', meal: mealKey || 'breakfast' };
     const tb = document.querySelector('.tab-bar'); if (tb) tb.style.display = 'none';
     renderMyFoods();
+    document.getElementById('sfFormView').classList.add('open');
+    lockScroll();
   }
 
   function openEditFood(id) {
@@ -1337,6 +1364,8 @@
     sfDraft = { name: food.name, calories: food.calories, protein_g: food.protein_g, serving_size: food.serving_size || '1 serving', meal: food.meal };
     const tb = document.querySelector('.tab-bar'); if (tb) tb.style.display = 'none';
     renderMyFoods();
+    document.getElementById('sfFormView').classList.add('open');
+    lockScroll();
   }
 
   function backToLibrary() {
@@ -1347,6 +1376,8 @@
     sfParsedItems = [];
     sfFinalName = '';
     const tb = document.querySelector('.tab-bar'); if (tb) tb.style.display = '';
+    document.getElementById('sfFormView').classList.remove('open');
+    unlockScroll();
     renderMyFoods();
   }
 
@@ -1563,12 +1594,12 @@ The top-level "name" should be a natural overall label for the combined item.`;
   }
 
   function renderSfResultsList() {
-    const resultsArea    = document.getElementById('sfResultsArea');
+    const section        = document.getElementById('sfComponentsSection');
     const resultsList    = document.getElementById('sfResultsList');
     const reanalyzeLabel = document.getElementById('sfReanalyzeLabel');
-    if (!resultsArea || !resultsList) return;
+    if (!section || !resultsList) return;
     if (sfParsedItems.length === 0) {
-      resultsArea.style.display = 'none';
+      section.style.display = 'none';
       if (reanalyzeLabel) reanalyzeLabel.style.display = 'none';
       const aBtn = document.getElementById('sfAnalyzeBtn');
       if (aBtn) { aBtn.className = 'lv-primary-btn'; aBtn.textContent = 'Analyze'; aBtn.style.marginTop = '8px'; }
@@ -1584,7 +1615,7 @@ The top-level "name" should be a natural overall label for the combined item.`;
         <button class="sheet-result-del" onclick="event.stopPropagation();deleteSfItem(${i})" aria-label="Remove item">&#215;</button>
       </div>`
     ).join('');
-    resultsArea.style.display = 'block';
+    section.style.display = 'block';
     if (reanalyzeLabel) reanalyzeLabel.style.display = 'block';
     const aBtn = document.getElementById('sfAnalyzeBtn');
     if (aBtn) { aBtn.className = 'lv-secondary-btn'; aBtn.textContent = 'Re-analyze'; }
@@ -1956,10 +1987,14 @@ The top-level "name" should be a natural overall label for the combined item.`;
     if (tab === 'weight') renderWeight();
     if (tab === 'settings') populateSettingsForm(loadSettings());
     if (tab === 'myfoods') {
+      const sfv = document.getElementById('sfFormView');
+      if (sfv && sfv.classList.contains('open')) { sfv.classList.remove('open'); unlockScroll(); }
       myFoodsView = 'library';
       editingFoodId = null;
       sfPendingImages = [];
       sfAnalyzed = false;
+      sfParsedItems = [];
+      sfFinalName = '';
       renderMyFoods();
     }
   }
@@ -2438,7 +2473,7 @@ The top-level "name" should be a natural overall label for the combined item.`;
         <button class="sheet-result-del" onclick="event.stopPropagation();deleteSheetItem(${i})" aria-label="Remove item">&#215;</button>
       </div>`
     ).join('');
-    resultsArea.style.display = 'block';
+    section.style.display = 'block';
     if (reanalyzeLabel) reanalyzeLabel.style.display = 'block';
     const ctxLine = document.getElementById('lvContextLine');
     if (ctxLine) ctxLine.style.display = 'none';
