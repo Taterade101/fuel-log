@@ -2016,11 +2016,11 @@ The top-level "name" should be a natural overall label for the combined item.`;
       document.getElementById('stickyCalFill').style.width = '0%';
       document.getElementById('stickyProFill').style.width = '0%';
       document.getElementById('stickyProgress').style.height = '0px';
-      // Restore main weekNav/dayTabs opacity
+      // Restore main weekNav/dayTabs visibility (may have been hidden by sticky logic)
       const _wn = document.getElementById('weekNav');
       const _dt = document.getElementById('dayTabs');
-      if (_wn) _wn.style.opacity = '';
-      if (_dt) _dt.style.opacity = '';
+      if (_wn) { _wn.style.opacity = ''; _wn.style.visibility = ''; }
+      if (_dt) { _dt.style.opacity = ''; _dt.style.visibility = ''; }
     }
     if (tab === 'today') { renderDayNav(); updateDayUI(); requestAnimationFrame(_applyStickyScroll); }
     if (tab === 'week') renderWeek();
