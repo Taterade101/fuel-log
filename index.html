@@ -1090,7 +1090,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.6.5';
+  const APP_VERSION = 'v2.6.6';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -2151,17 +2151,21 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     document.getElementById('photoMenuOverlay').style.display = 'none';
     document.getElementById('photoMenu').style.display = 'none';
   }
-  function triggerPhotoCapture() {
+  function _triggerFileInput(capture) {
     closePhotoMenu();
     const inp = document.createElement('input');
-    inp.type = 'file'; inp.accept = 'image/*'; inp.capture = 'environment';
-    inp.onchange = handleSheetPhoto;
+    inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
+    if (capture) inp.capture = 'environment';
+    inp.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(inp);
+    inp.addEventListener('change', function(e) {
+      handleSheetPhoto(e);
+      setTimeout(function() { document.body.removeChild(inp); }, 200);
+    });
     inp.click();
   }
-  function triggerPhotoLibrary() {
-    closePhotoMenu();
-    document.getElementById('sheetPhotoInput').click();
-  }
+  function triggerPhotoCapture()  { _triggerFileInput(true);  }
+  function triggerPhotoLibrary()  { _triggerFileInput(false); }
 
   async function analyzeSheet() {
     const s = loadSettings();
