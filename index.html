@@ -2513,7 +2513,7 @@ The top-level "name" should be a natural overall label for the combined item.`;
         <button class="sheet-result-del" onclick="event.stopPropagation();deleteSheetItem(${i})" aria-label="Remove item">&#215;</button>
       </div>`
     ).join('');
-    section.style.display = 'block';
+    resultsArea.style.display = 'block';
     if (reanalyzeLabel) reanalyzeLabel.style.display = 'block';
     const ctxLine = document.getElementById('lvContextLine');
     if (ctxLine) ctxLine.style.display = 'none';
