@@ -253,6 +253,7 @@
     background: var(--surface2); border-radius: 10px;
     padding: 3px; flex-shrink: 0;
   }
+  #lvTabsBar { border-bottom: 1px solid var(--border); margin-bottom: 4px; flex-shrink: 0; }
   .lv-tab {
     flex: 1; text-align: center; padding: 9px;
     border-radius: 8px; border: none; cursor: pointer;
@@ -313,6 +314,14 @@
     font-size: 14px; cursor: pointer; display: flex;
     align-items: center; justify-content: center; line-height: 1;
   }
+  .sheet-result-row { cursor: pointer; }
+  .sheet-result-editing { cursor: default; background: var(--surface) !important; border: 1.5px solid rgba(52,211,153,0.3) !important; }
+  .sr-edit-name { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 13px; padding: 5px 8px; outline: none; box-sizing: border-box; }
+  .sr-edit-name:focus { border-color: rgba(52,211,153,0.5); }
+  .sr-edit-num { width: 58px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 13px; padding: 5px 8px; outline: none; }
+  .sr-edit-num:focus { border-color: rgba(52,211,153,0.5); }
+  .sr-edit-unit { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+  .sr-edit-done { width: 30px; height: 30px; border-radius: 50%; border: none; background: var(--accent); color: #0C0C0E; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: center; }
   #sheetMyFoodsView { overflow-y: auto; padding: 6px 0; }
   .sheet-item-card {
     background: var(--surface2); border-radius: var(--r-sm);
@@ -1021,9 +1030,11 @@
     </div>
     <div style="min-width:64px"></div>
   </div>
-  <div id="lvTabs">
-    <button class="lv-tab sel" id="sheetTabDescribe" onclick="selectLogTab('describe')">Describe</button>
-    <button class="lv-tab" id="sheetTabMyFoods" onclick="selectLogTab('myfoods')">My Foods</button>
+  <div id="lvTabsBar">
+    <div id="lvTabs">
+      <button class="lv-tab sel" id="sheetTabDescribe" onclick="selectLogTab('describe')">Describe</button>
+      <button class="lv-tab" id="sheetTabMyFoods" onclick="selectLogTab('myfoods')">My Foods</button>
+    </div>
   </div>
   <div id="lvContent">
     <div id="sheetDescribeView">
@@ -1083,7 +1094,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.6.7';
+  const APP_VERSION = 'v2.7.0';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1591,6 +1602,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   let sheetMealPillsOpen = false;
   let sheetViewMode = 'describe';
   let sheetAnalyzed = false;
+  let sheetEditIndex = -1;
 
   // ---- DAY NAV ----
   function renderDayNav() {
@@ -1895,6 +1907,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     sheetParsedItems = [];
     sheetClaudeResponse = '';
     sheetAnalyzed = false;
+    sheetEditIndex = -1;
     sheetViewMode = 'describe';
     updateLvMealChip();
     const inp = document.getElementById('sheetInput');
@@ -1909,6 +1922,8 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     if (tabS) tabS.classList.remove('sel');
     const cb = document.getElementById('sheetClaudeBlock');
     if (cb) cb.style.display = 'none';
+    const ctx0 = document.getElementById('lvContextLine');
+    if (ctx0) ctx0.style.display = '';
     const ra = document.getElementById('sheetResultsArea');
     if (ra) ra.style.display = 'none';
     const rl = document.getElementById('lvReanalyzeLabel');
@@ -2233,20 +2248,38 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
       resultsArea.style.display = 'none';
       if (reanalyzeLabel) reanalyzeLabel.style.display = 'none';
       if (!sheetClaudeResponse && claudeBlock) claudeBlock.style.display = 'none';
+      const ctxLine2 = document.getElementById('lvContextLine');
+      if (ctxLine2) ctxLine2.style.display = '';
       updateLvPinned();
       return;
     }
-    resultsList.innerHTML = sheetParsedItems.map((item, i) =>
-      `<div class="sheet-result-row">
+    resultsList.innerHTML = sheetParsedItems.map((item, i) => {
+      if (i === sheetEditIndex) {
+        return `<div class="sheet-result-row sheet-result-editing">
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+            <input class="sr-edit-name" id="srName${i}" value="${escHtml(item.name)}" />
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input class="sr-edit-num" id="srCal${i}" type="number" inputmode="numeric" value="${item.calories}" />
+              <span class="sr-edit-unit">cal</span>
+              <input class="sr-edit-num" id="srPro${i}" type="number" inputmode="decimal" value="${item.protein_g}" />
+              <span class="sr-edit-unit">g pro</span>
+            </div>
+          </div>
+          <button class="sr-edit-done" onclick="saveSheetItemEdit(${i})"><i class="ti ti-check"></i></button>
+        </div>`;
+      }
+      return `<div class="sheet-result-row" onclick="editSheetItem(${i})">
         <div class="sheet-result-info">
           <div class="sheet-result-name">${escHtml(item.name)}</div>
           <div class="sheet-result-meta">${item.quantity} ${escHtml(item.quantity_unit)} · ${item.calories} cal · ${item.protein_g}g protein</div>
         </div>
-        <button class="sheet-result-del" onclick="deleteSheetItem(${i})" aria-label="Remove item">&#215;</button>
-      </div>`
-    ).join('');
+        <button class="sheet-result-del" onclick="event.stopPropagation();deleteSheetItem(${i})" aria-label="Remove item">&#215;</button>
+      </div>`;
+    }).join('');
     resultsArea.style.display = 'block';
     if (reanalyzeLabel) reanalyzeLabel.style.display = 'block';
+    const ctxLine = document.getElementById('lvContextLine');
+    if (ctxLine) ctxLine.style.display = 'none';
     updateLvPinned();
     const aBtn = document.getElementById('sheetAnalyzeBtn');
     if (aBtn) {
@@ -2259,6 +2292,29 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
         aBtn.textContent = 'Analyze';
       }
     }
+  }
+
+  function editSheetItem(i) {
+    sheetEditIndex = i;
+    renderResultsList();
+    setTimeout(function() {
+      const el = document.getElementById('srName' + i);
+      if (el) el.focus();
+    }, 50);
+  }
+
+  function saveSheetItemEdit(i) {
+    const name = document.getElementById('srName' + i);
+    const cal  = document.getElementById('srCal'  + i);
+    const pro  = document.getElementById('srPro'  + i);
+    if (!name) return;
+    sheetParsedItems[i].name       = name.value.trim() || sheetParsedItems[i].name;
+    sheetParsedItems[i].calories   = Math.max(0, parseInt(cal.value)   || 0);
+    sheetParsedItems[i].protein_g  = Math.max(0, parseFloat(pro.value) || 0);
+    sheetParsedItems[i].cal_per_unit     = sheetParsedItems[i].calories;
+    sheetParsedItems[i].protein_per_unit = sheetParsedItems[i].protein_g;
+    sheetEditIndex = -1;
+    renderResultsList();
   }
 
   function deleteSheetItem(i) {
