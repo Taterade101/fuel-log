@@ -265,7 +265,7 @@
   #lvContent { flex: 1; overflow-y: auto; padding: 16px 16px 0; }
   #sheetDescribeView { display: flex; flex-direction: column; gap: 12px; }
   #lvContextLine { text-align: center; font-size: 13px; color: var(--muted); padding: 4px 0 8px; margin: 0; }
-  #lvReanalyzeLabel { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.05em; margin: 4px 0 0; }
+  #lvReanalyzeLabel, #sfReanalyzeLabel { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.05em; margin: 4px 0 0; }
   .lv-input-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; }
   .lv-input-card:focus-within { border-color: rgba(52,211,153,0.35); }
   .lv-input-card textarea {
@@ -274,13 +274,13 @@
     font-size: 14px; padding: 14px; resize: none; height: 130px; line-height: 1.6; display: block;
   }
   .lv-input-footer { border-top: 1px solid var(--border); padding: 10px 14px; display: flex; align-items: center; gap: 10px; }
-  #sheetPhotoBtn {
+  #sheetPhotoBtn, #sfPhotoBtn {
     display: flex; align-items: center; gap: 7px;
     background: none; border: none; cursor: pointer;
     color: var(--muted); font-family: 'Inter', sans-serif; font-size: 13px; padding: 0;
   }
-  #sheetPhotoBtn i { font-size: 18px; color: var(--accent); }
-  #sheetPhotoBtn.has-photo i { color: var(--accent2); }
+  #sheetPhotoBtn i, #sfPhotoBtn i { font-size: 18px; color: var(--accent); }
+  #sheetPhotoBtn.has-photo i, #sfPhotoBtn.has-photo i { color: var(--accent2); }
   #lvPinned { padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 20px); flex-shrink: 0; }
   .lv-primary-btn {
     background: var(--accent); color: #0C0C0E; border: none;
@@ -381,6 +381,7 @@
   }
   .photo-thumb-clear:hover { color: var(--danger); }
   #sheetPhotoArea { padding: 10px 14px 10px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  #sfPhotoArea { padding: 14px 14px 10px; border-bottom: 1px solid var(--border); background: var(--surface2); }
   .photo-hint { font-size: 12px; color: var(--accent2); margin-bottom: 8px; font-weight: 500; }
 
   .input-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 8px; }
@@ -1137,7 +1138,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.8.0';
+  const APP_VERSION = 'v2.8.1';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1228,7 +1229,10 @@
 
     const summaryHTML = hasResults ? `
       <div class="sf-summary-card">
-        <input type="text" id="sfFinalNameInput" class="sf-name-input" value="${escHtml(sfFinalName)}" placeholder="Name this item…" />
+        <div style="position:relative;">
+          <input type="text" id="sfFinalNameInput" class="sf-name-input" value="${escHtml(sfFinalName)}" placeholder="Name this item…" style="padding-right:22px" />
+          <i class="ti ti-pencil" style="position:absolute;right:2px;bottom:12px;font-size:13px;color:var(--muted);pointer-events:none" aria-hidden="true"></i>
+        </div>
         <div class="sf-summary-totals">
           <span class="sf-total-badge cal">${totalCal} cal</span>
           <span class="sf-total-badge pro">${totalPro}g protein</span>
@@ -1244,17 +1248,7 @@
         ${isEdit ? `<button class="lv-secondary-btn" onclick="confirmDeleteFood('${editingFoodId}')" style="margin-top:8px;color:var(--danger);border-color:var(--danger)">Delete item</button>` : ''}
       </div>` : '';
 
-    return `
-      <div class="sf-form-header">
-        <button class="sf-back-btn" onclick="backToLibrary()">
-          <i class="ti ti-arrow-left" style="font-size:17px"></i>
-          My Foods
-        </button>
-        <span class="sf-form-title">${isEdit ? 'Edit Item' : 'New Item'}</span>
-      </div>
-      <div id="sfResultsArea" style="display:${hasResults ? 'block' : 'none'}">
-        <div id="sfResultsList"></div>
-      </div>
+    const inputSectionHTML = isEdit ? '' : `
       <div id="sfReanalyzeLabel" style="display:${hasResults ? 'block' : 'none'}">RE-ANALYZE</div>
       <div class="lv-input-card">
         <div id="sfPhotoArea" style="display:none">
@@ -1268,7 +1262,20 @@
           </button>
         </div>
       </div>
-      <button class="${hasResults ? 'lv-secondary-btn' : 'lv-primary-btn'}" id="sfAnalyzeBtn" onclick="analyzeFood()" style="margin-top:8px">${hasResults ? 'Re-analyze' : 'Analyze'}</button>
+      <button class="${hasResults ? 'lv-secondary-btn' : 'lv-primary-btn'}" id="sfAnalyzeBtn" onclick="analyzeFood()" style="margin-top:8px">${hasResults ? 'Re-analyze' : 'Analyze'}</button>`;
+
+    return `
+      <div class="sf-form-header">
+        <button class="sf-back-btn" onclick="backToLibrary()">
+          <i class="ti ti-arrow-left" style="font-size:17px"></i>
+          My Foods
+        </button>
+        <span class="sf-form-title">${isEdit ? 'Edit Item' : 'New Item'}</span>
+      </div>
+      <div id="sfResultsArea" style="display:${hasResults ? 'block' : 'none'}">
+        <div id="sfResultsList"></div>
+      </div>
+      ${inputSectionHTML}
       ${summaryHTML}`;
   }
 
@@ -1299,6 +1306,7 @@
     sfParsedItems = [];
     sfFinalName = '';
     sfDraft = { name: '', calories: 0, protein_g: 0, serving_size: '1 serving', meal: mealKey || 'breakfast' };
+    const tb = document.querySelector('.tab-bar'); if (tb) tb.style.display = 'none';
     renderMyFoods();
   }
 
@@ -1320,6 +1328,7 @@
       protein_per_unit: food.protein_g
     }];
     sfDraft = { name: food.name, calories: food.calories, protein_g: food.protein_g, serving_size: food.serving_size || '1 serving', meal: food.meal };
+    const tb = document.querySelector('.tab-bar'); if (tb) tb.style.display = 'none';
     renderMyFoods();
   }
 
@@ -1330,6 +1339,7 @@
     sfAnalyzed = false;
     sfParsedItems = [];
     sfFinalName = '';
+    const tb = document.querySelector('.tab-bar'); if (tb) tb.style.display = '';
     renderMyFoods();
   }
 
@@ -1418,7 +1428,11 @@ The top-level "name" should be a natural overall label for the combined item.`;
 
   function deleteFood(id) {
     saveSavedFoods(loadSavedFoods().filter(f => f.id !== id));
-    renderMyFoods();
+    if (myFoodsView === 'form') {
+      backToLibrary();
+    } else {
+      renderMyFoods();
+    }
     showToast('Item deleted');
   }
 
@@ -1559,6 +1573,7 @@ The top-level "name" should be a natural overall label for the combined item.`;
           <div class="sheet-result-name">${escHtml(item.name)}</div>
           <div class="sheet-result-meta">${item.quantity} ${escHtml(item.quantity_unit)} · ${item.calories} cal · ${item.protein_g}g protein</div>
         </div>
+        <i class="ti ti-pencil" style="font-size:13px;color:var(--muted);flex-shrink:0;margin-right:6px" aria-hidden="true"></i>
         <button class="sheet-result-del" onclick="event.stopPropagation();deleteSfItem(${i})" aria-label="Remove item">&#215;</button>
       </div>`
     ).join('');
