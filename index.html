@@ -315,13 +315,17 @@
     align-items: center; justify-content: center; line-height: 1;
   }
   .sheet-result-row { cursor: pointer; }
-  .sheet-result-editing { cursor: default; background: var(--surface) !important; border: 1.5px solid rgba(52,211,153,0.3) !important; }
-  .sr-edit-name { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 13px; padding: 5px 8px; outline: none; box-sizing: border-box; }
-  .sr-edit-name:focus { border-color: rgba(52,211,153,0.5); }
-  .sr-edit-num { width: 58px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 13px; padding: 5px 8px; outline: none; }
-  .sr-edit-num:focus { border-color: rgba(52,211,153,0.5); }
-  .sr-edit-unit { font-size: 11px; color: var(--muted); flex-shrink: 0; }
-  .sr-edit-done { width: 30px; height: 30px; border-radius: 50%; border: none; background: var(--accent); color: #0C0C0E; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: center; }
+  #editItemOverlay { position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,0.7); }
+  #editItemModal { position: fixed; z-index: 81; left: 20px; right: 20px; top: 50%; transform: translateY(-50%); background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: 0 16px 48px rgba(0,0,0,0.7); }
+  .em-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+  .em-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+  .em-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .em-input { background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--r-sm); color: var(--text); font-family: 'Inter', sans-serif; font-size: 15px; padding: 10px 12px; outline: none; width: 100%; box-sizing: border-box; }
+  .em-input:focus { border-color: rgba(52,211,153,0.5); }
+  .em-row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .em-actions { display: flex; gap: 10px; margin-top: 4px; }
+  .em-cancel { flex: 1; padding: 13px; border: 1.5px solid var(--border); background: none; border-radius: var(--r); color: var(--muted); font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .em-save { flex: 2; padding: 13px; border: none; background: var(--accent); border-radius: var(--r); color: #0C0C0E; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; }
   #sheetMyFoodsView { overflow-y: auto; padding: 6px 0; }
   .sheet-item-card {
     background: var(--surface2); border-radius: var(--r-sm);
@@ -1068,6 +1072,29 @@
   </div>
   <div id="lvPinned"></div>
 </div>
+<div id="editItemOverlay" style="display:none" onclick="closeEditModal()"></div>
+<div id="editItemModal" style="display:none">
+  <div class="em-title">Edit Item</div>
+  <div class="em-field">
+    <div class="em-label">Name</div>
+    <input class="em-input" id="emName" type="text" />
+  </div>
+  <div class="em-row">
+    <div class="em-field" style="flex:1">
+      <div class="em-label">Calories</div>
+      <input class="em-input" id="emCal" type="number" inputmode="numeric" />
+    </div>
+    <div class="em-field" style="flex:1">
+      <div class="em-label">Protein (g)</div>
+      <input class="em-input" id="emPro" type="number" inputmode="decimal" />
+    </div>
+  </div>
+  <div class="em-actions">
+    <button class="em-cancel" onclick="closeEditModal()">Cancel</button>
+    <button class="em-save" onclick="saveEditModal()">Save</button>
+  </div>
+</div>
+
 <!-- BOTTOM TAB BAR -->
 <nav class="tab-bar">
   <button class="tab-item active" onclick="switchTab('today')">
@@ -1094,7 +1121,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.7.0';
+  const APP_VERSION = 'v2.7.1';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1602,7 +1629,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   let sheetMealPillsOpen = false;
   let sheetViewMode = 'describe';
   let sheetAnalyzed = false;
-  let sheetEditIndex = -1;
+  let editModalIndex = -1;
 
   // ---- DAY NAV ----
   function renderDayNav() {
@@ -1907,7 +1934,7 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
     sheetParsedItems = [];
     sheetClaudeResponse = '';
     sheetAnalyzed = false;
-    sheetEditIndex = -1;
+    editModalIndex = -1;
     sheetViewMode = 'describe';
     updateLvMealChip();
     const inp = document.getElementById('sheetInput');
@@ -2253,29 +2280,15 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
       updateLvPinned();
       return;
     }
-    resultsList.innerHTML = sheetParsedItems.map((item, i) => {
-      if (i === sheetEditIndex) {
-        return `<div class="sheet-result-row sheet-result-editing">
-          <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
-            <input class="sr-edit-name" id="srName${i}" value="${escHtml(item.name)}" />
-            <div style="display:flex;align-items:center;gap:6px;">
-              <input class="sr-edit-num" id="srCal${i}" type="number" inputmode="numeric" value="${item.calories}" />
-              <span class="sr-edit-unit">cal</span>
-              <input class="sr-edit-num" id="srPro${i}" type="number" inputmode="decimal" value="${item.protein_g}" />
-              <span class="sr-edit-unit">g pro</span>
-            </div>
-          </div>
-          <button class="sr-edit-done" onclick="saveSheetItemEdit(${i})"><i class="ti ti-check"></i></button>
-        </div>`;
-      }
-      return `<div class="sheet-result-row" onclick="editSheetItem(${i})">
+    resultsList.innerHTML = sheetParsedItems.map((item, i) =>
+      `<div class="sheet-result-row" onclick="editSheetItem(${i})">
         <div class="sheet-result-info">
           <div class="sheet-result-name">${escHtml(item.name)}</div>
           <div class="sheet-result-meta">${item.quantity} ${escHtml(item.quantity_unit)} · ${item.calories} cal · ${item.protein_g}g protein</div>
         </div>
         <button class="sheet-result-del" onclick="event.stopPropagation();deleteSheetItem(${i})" aria-label="Remove item">&#215;</button>
-      </div>`;
-    }).join('');
+      </div>`
+    ).join('');
     resultsArea.style.display = 'block';
     if (reanalyzeLabel) reanalyzeLabel.style.display = 'block';
     const ctxLine = document.getElementById('lvContextLine');
@@ -2295,25 +2308,34 @@ Return calories and protein for exactly one unit of the chosen serving_size.`;
   }
 
   function editSheetItem(i) {
-    sheetEditIndex = i;
-    renderResultsList();
-    setTimeout(function() {
-      const el = document.getElementById('srName' + i);
-      if (el) el.focus();
-    }, 50);
+    const item = sheetParsedItems[i];
+    if (!item) return;
+    editModalIndex = i;
+    document.getElementById('emName').value = item.name;
+    document.getElementById('emCal').value  = item.calories;
+    document.getElementById('emPro').value  = item.protein_g;
+    document.getElementById('editItemOverlay').style.display = 'block';
+    document.getElementById('editItemModal').style.display  = 'block';
+    setTimeout(function() { document.getElementById('emName').focus(); }, 80);
   }
 
-  function saveSheetItemEdit(i) {
-    const name = document.getElementById('srName' + i);
-    const cal  = document.getElementById('srCal'  + i);
-    const pro  = document.getElementById('srPro'  + i);
-    if (!name) return;
-    sheetParsedItems[i].name       = name.value.trim() || sheetParsedItems[i].name;
-    sheetParsedItems[i].calories   = Math.max(0, parseInt(cal.value)   || 0);
-    sheetParsedItems[i].protein_g  = Math.max(0, parseFloat(pro.value) || 0);
-    sheetParsedItems[i].cal_per_unit     = sheetParsedItems[i].calories;
-    sheetParsedItems[i].protein_per_unit = sheetParsedItems[i].protein_g;
-    sheetEditIndex = -1;
+  function closeEditModal() {
+    document.getElementById('editItemOverlay').style.display = 'none';
+    document.getElementById('editItemModal').style.display  = 'none';
+    editModalIndex = -1;
+  }
+
+  function saveEditModal() {
+    if (editModalIndex < 0 || editModalIndex >= sheetParsedItems.length) { closeEditModal(); return; }
+    const name = document.getElementById('emName').value.trim();
+    const cal  = parseFloat(document.getElementById('emCal').value) || 0;
+    const pro  = parseFloat(document.getElementById('emPro').value) || 0;
+    if (name) sheetParsedItems[editModalIndex].name = name;
+    sheetParsedItems[editModalIndex].calories          = Math.max(0, cal);
+    sheetParsedItems[editModalIndex].protein_g         = Math.max(0, pro);
+    sheetParsedItems[editModalIndex].cal_per_unit      = Math.max(0, cal);
+    sheetParsedItems[editModalIndex].protein_per_unit  = Math.max(0, pro);
+    closeEditModal();
     renderResultsList();
   }
 
