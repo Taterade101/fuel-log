@@ -1156,7 +1156,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.9.0';
+  const APP_VERSION = 'v2.9.1';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1247,6 +1247,48 @@
     const totalCal = sfParsedItems.reduce((s, x) => s + (x.calories || 0), 0);
     const totalPro = Math.round(sfParsedItems.reduce((s, x) => s + (x.protein_g || 0), 0) * 10) / 10;
 
+    const header = `
+      <div class="sf-form-header">
+        <button class="sf-back-btn" onclick="backToLibrary()">
+          <i class="ti ti-arrow-left" style="font-size:17px"></i>
+          My Foods
+        </button>
+        <span class="sf-form-title">${isEdit ? 'Edit Item' : 'New Item'}</span>
+      </div>`;
+
+    // ── Edit mode: flat form, all fields directly editable ──────────────────
+    if (isEdit) {
+      const editCal = sfParsedItems[0] ? sfParsedItems[0].calories : 0;
+      const editPro = sfParsedItems[0] ? sfParsedItems[0].protein_g : 0;
+      return header + `
+        <div class="sf-summary-card">
+          <label class="sf-field-label" style="display:flex;align-items:center;gap:4px">
+            Name <i class="ti ti-pencil" style="font-size:10px" aria-hidden="true"></i>
+          </label>
+          <input type="text" id="sfFinalNameInput" class="sf-name-input" value="${escHtml(sfFinalName)}" placeholder="Item name" style="margin-bottom:14px" />
+          <div class="sf-macro-grid">
+            <div class="sf-macro-item">
+              <div class="sf-macro-label">Calories <i class="ti ti-pencil" style="font-size:9px" aria-hidden="true"></i></div>
+              <input type="number" id="sfEditCal" class="sf-macro-input cal" value="${editCal}" min="0" />
+            </div>
+            <div class="sf-macro-item">
+              <div class="sf-macro-label">Protein (g) <i class="ti ti-pencil" style="font-size:9px" aria-hidden="true"></i></div>
+              <input type="number" id="sfEditPro" class="sf-macro-input pro" value="${editPro}" min="0" step="0.1" />
+            </div>
+          </div>
+          <label class="sf-field-label">Serving size</label>
+          <button class="sf-serving-btn" onclick="openServingPicker()" type="button">
+            <span class="sf-serving-val" id="sfServingDisplay">${escHtml(sfDraft.serving_size || '1 serving')}</span>
+            <i class="ti ti-chevron-down" aria-hidden="true"></i>
+          </button>
+          <label class="sf-field-label">Default meal group</label>
+          <div class="meal-pills" id="sfMealPills" style="margin-bottom:16px"></div>
+          <button class="lv-primary-btn" onclick="saveFood()">Save Item</button>
+          <button class="lv-secondary-btn" onclick="confirmDeleteFood('${editingFoodId}')" style="margin-top:8px;color:var(--danger);border-color:var(--danger)">Delete item</button>
+        </div>`;
+    }
+
+    // ── New item mode: analyze flow ──────────────────────────────────────────
     const summaryHTML = hasResults ? `
       <div class="sf-summary-card">
         <div style="position:relative;">
@@ -1265,10 +1307,21 @@
         <label class="sf-field-label">Default meal group</label>
         <div class="meal-pills" id="sfMealPills" style="margin-bottom:16px"></div>
         <button class="lv-primary-btn" onclick="saveFood()">Save Item</button>
-        ${isEdit ? `<button class="lv-secondary-btn" onclick="confirmDeleteFood('${editingFoodId}')" style="margin-top:8px;color:var(--danger);border-color:var(--danger)">Delete item</button>` : ''}
       </div>` : '';
 
-    const inputSectionHTML = isEdit ? '' : `
+    return header + `
+      <div id="sfComponentsSection" style="display:${hasResults ? 'block' : 'none'}">
+        <div class="sf-section-label">COMPONENTS</div>
+        <div id="sfResultsArea">
+          <div id="sfResultsList"></div>
+        </div>
+        <div class="sf-combines-into">
+          <div class="sf-combines-line"></div>
+          <span><i class="ti ti-arrow-down" aria-hidden="true"></i> saves as one item</span>
+          <div class="sf-combines-line"></div>
+        </div>
+      </div>
+      ${summaryHTML}
       <div id="sfReanalyzeLabel" style="display:${hasResults ? 'block' : 'none'}">RE-ANALYZE</div>
       <div class="lv-input-card">
         <div id="sfPhotoArea" style="display:none">
@@ -1283,28 +1336,6 @@
         </div>
       </div>
       <button class="${hasResults ? 'lv-secondary-btn' : 'lv-primary-btn'}" id="sfAnalyzeBtn" onclick="analyzeFood()" style="margin-top:8px">${hasResults ? 'Re-analyze' : 'Analyze'}</button>`;
-
-    return `
-      <div class="sf-form-header">
-        <button class="sf-back-btn" onclick="backToLibrary()">
-          <i class="ti ti-arrow-left" style="font-size:17px"></i>
-          My Foods
-        </button>
-        <span class="sf-form-title">${isEdit ? 'Edit Item' : 'New Item'}</span>
-      </div>
-      <div id="sfComponentsSection" style="display:${hasResults ? 'block' : 'none'}">
-        <div class="sf-section-label">COMPONENTS</div>
-        <div id="sfResultsArea">
-          <div id="sfResultsList"></div>
-        </div>
-        <div class="sf-combines-into">
-          <div class="sf-combines-line"></div>
-          <span><i class="ti ti-arrow-down" aria-hidden="true"></i> saves as one item</span>
-          <div class="sf-combines-line"></div>
-        </div>
-      </div>
-      ${summaryHTML}
-      ${inputSectionHTML}`;
   }
 
   function attachFoodFormHandlers() {
@@ -1448,9 +1479,18 @@ The top-level "name" should be a natural overall label for the combined item.`;
     const nameInput = document.getElementById('sfFinalNameInput');
     const name = (nameInput && nameInput.value.trim()) || sfFinalName;
     if (!name) { showToast('Add a name first'); return; }
-    if (sfParsedItems.length === 0) { showToast('Analyze the food first'); return; }
-    const cal = sfParsedItems.reduce((s, x) => s + (x.calories || 0), 0);
-    const pro = Math.round(sfParsedItems.reduce((s, x) => s + (x.protein_g || 0), 0) * 10) / 10;
+    let cal, pro;
+    if (editingFoodId) {
+      // Edit mode: read directly from the flat form inputs
+      const calInput = document.getElementById('sfEditCal');
+      const proInput = document.getElementById('sfEditPro');
+      cal = calInput ? Math.round(parseFloat(calInput.value) || 0) : 0;
+      pro = Math.round((proInput ? parseFloat(proInput.value) || 0 : 0) * 10) / 10;
+    } else {
+      if (sfParsedItems.length === 0) { showToast('Analyze the food first'); return; }
+      cal = sfParsedItems.reduce((s, x) => s + (x.calories || 0), 0);
+      pro = Math.round(sfParsedItems.reduce((s, x) => s + (x.protein_g || 0), 0) * 10) / 10;
+    }
     const foods = loadSavedFoods();
     if (editingFoodId) {
       const idx = foods.findIndex(f => f.id === editingFoodId);
@@ -1615,7 +1655,7 @@ The top-level "name" should be a natural overall label for the combined item.`;
         <button class="sheet-result-del" onclick="event.stopPropagation();deleteSfItem(${i})" aria-label="Remove item">&#215;</button>
       </div>`
     ).join('');
-    section.style.display = 'block';
+    resultsArea.style.display = 'block';
     if (reanalyzeLabel) reanalyzeLabel.style.display = 'block';
     const aBtn = document.getElementById('sfAnalyzeBtn');
     if (aBtn) { aBtn.className = 'lv-secondary-btn'; aBtn.textContent = 'Re-analyze'; }
