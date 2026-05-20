@@ -1083,25 +1083,28 @@
 <div id="editItemModal" style="display:none">
   <div class="edit-modal">
     <div class="edit-modal-hdr">
-      <input id="emName" class="edit-num-input" style="font-size:14px;font-weight:700;flex:1;color:var(--text)" type="text" placeholder="Food name" />
-      <button class="edit-close-btn" onclick="closeEditModal()" style="margin-left:8px">&#215;</button>
+      <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+        <label class="edit-field-label" style="display:flex;align-items:center;gap:4px">Name <i class="ti ti-pencil" style="font-size:10px" aria-hidden="true"></i></label>
+        <input id="emName" class="edit-num-input" style="font-size:14px;font-weight:700;color:var(--text)" type="text" placeholder="Food name" />
+      </div>
+      <button class="edit-close-btn" onclick="closeEditModal()" style="margin-left:8px;align-self:flex-start">&#215;</button>
     </div>
-    <div class="edit-field">
-      <label class="edit-field-label">Servings / quantity</label>
-      <div class="edit-qty-row">
-        <button class="edit-step-btn" onclick="stepStagingQty(-1)">&#8722;</button>
-        <input type="number" id="emQty" class="edit-num-input" min="0.5" step="0.5" oninput="recalcStagingEdit()" />
-        <button class="edit-step-btn" onclick="stepStagingQty(1)">&#43;</button>
-        <span class="edit-qty-unit" id="emQtyUnit"></span>
+    <div class="edit-macro-row" style="margin-bottom:10px">
+      <div class="edit-field">
+        <label class="edit-field-label" style="display:flex;align-items:center;gap:4px">Quantity <i class="ti ti-pencil" style="font-size:10px" aria-hidden="true"></i></label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" id="emQty" class="edit-num-input" min="0.5" step="0.5" style="flex:1" />
+          <span id="emQtyUnit" style="font-size:12px;color:var(--muted);white-space:nowrap;flex-shrink:0"></span>
+        </div>
       </div>
     </div>
     <div class="edit-macro-row">
       <div class="edit-field">
-        <label class="edit-field-label">Calories</label>
+        <label class="edit-field-label" style="display:flex;align-items:center;gap:4px">Calories <i class="ti ti-pencil" style="font-size:10px" aria-hidden="true"></i></label>
         <input type="number" id="emCal" class="edit-num-input cal" min="0" />
       </div>
       <div class="edit-field">
-        <label class="edit-field-label">Protein (g)</label>
+        <label class="edit-field-label" style="display:flex;align-items:center;gap:4px">Protein (g) <i class="ti ti-pencil" style="font-size:10px" aria-hidden="true"></i></label>
         <input type="number" id="emPro" class="edit-num-input pro" min="0" step="0.1" />
       </div>
     </div>
@@ -1138,7 +1141,7 @@
 
 <script>
   // ---- VERSION ----
-  const APP_VERSION = 'v2.8.1';
+  const APP_VERSION = 'v2.8.2';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1318,14 +1321,18 @@
     sfPendingImages = [];
     sfAnalyzed = true;
     sfFinalName = food.name;
+    const ss = food.serving_size || '1 serving';
+    const ssM = ss.match(/^(\d+(?:\.\d+)?)\s+(.+)$/);
+    const ssQty = ssM ? parseFloat(ssM[1]) : 1;
+    const ssUnit = ssM ? ssM[2] : ss;
     sfParsedItems = [{
       name: food.name,
       calories: food.calories,
       protein_g: food.protein_g,
-      quantity: 1,
-      quantity_unit: food.serving_size || '1 serving',
-      cal_per_unit: food.calories,
-      protein_per_unit: food.protein_g
+      quantity: ssQty,
+      quantity_unit: ssUnit,
+      cal_per_unit: ssQty > 0 ? Math.round(food.calories / ssQty * 10) / 10 : food.calories,
+      protein_per_unit: ssQty > 0 ? Math.round(food.protein_g / ssQty * 10) / 10 : food.protein_g
     }];
     sfDraft = { name: food.name, calories: food.calories, protein_g: food.protein_g, serving_size: food.serving_size || '1 serving', meal: food.meal };
     const tb = document.querySelector('.tab-bar'); if (tb) tb.style.display = 'none';
