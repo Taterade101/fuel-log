@@ -1,5 +1,5 @@
   // ---- VERSION ----
-  const APP_VERSION = 'v3.0.2';
+  const APP_VERSION = 'v3.0.3';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -787,10 +787,60 @@ The top-level "name" should be a natural overall label for the combined item.`;
       () => {
         localStorage.setItem('fuelDayLocked_' + date, 'true');
         renderDayNav(); updateDayUI();
+        analyzeDayOnLock(date);
       }
     );
   }
   function unlockDay(date) { localStorage.removeItem('fuelDayLocked_' + date); renderDayNav(); updateDayUI(); }
+
+  function hashLog(log) {
+    const str = JSON.stringify(log.map(e => ({ n: e.name, c: e.calories, p: e.protein_g, m: e.meal || 'snack' })));
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+    return h.toString(36);
+  }
+
+  function renderLockAnalysis(card, text) {
+    card.innerHTML = `<div class="lock-analysis"><div class="ai-label" style="color:var(--accent);margin-bottom:4px">Claude</div><span>${text}</span></div>`;
+  }
+
+  async function analyzeDayOnLock(date) {
+    if (!getApiKey()) return;
+    const log = loadLog(date);
+    if (log.length === 0) return;
+    const s = loadSettings();
+    const cacheKey = 'fuelLockAnalysis_' + date;
+    const hash = hashLog(log);
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    const card = document.getElementById('lockAnalysisCard');
+    if (!card) return;
+    if (cached && cached.hash === hash) { renderLockAnalysis(card, cached.text); return; }
+    card.innerHTML = `<div class="lock-analysis loading"><span>Analyzing your day…</span></div>`;
+    const totalCal = log.reduce((a, e) => a + e.calories, 0);
+    const totalPro = log.reduce((a, e) => a + e.protein_g, 0);
+    const deficit = s.maintenance - totalCal;
+    const mealBreakdown = MEALS.map(m => {
+      const items = log.filter(e => (e.meal || 'snack') === m.key);
+      if (!items.length) return null;
+      return m.label + ': ' + items.map(e => `${e.name} (${e.calories} cal, ${e.protein_g}g protein)`).join(', ');
+    }).filter(Boolean).join('\n');
+    const weights = loadWeights();
+    const todayWeight = weights.find(w => w.date === date);
+    const userMsg = `Date: ${date}\nGoals: ${s.calGoal} cal, ${s.proGoal}g protein, ${s.maintenance} cal maintenance\nLogged: ${totalCal} cal, ${totalPro}g protein\n${deficit >= 0 ? 'Deficit' : 'Surplus'}: ${Math.abs(deficit)} cal\n${todayWeight ? 'Weight today: ' + todayWeight.weight + ' lbs\n' : ''}Meal breakdown:\n${mealBreakdown}`;
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': getApiKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 200, system: 'You are a brief, direct fitness coach. The user just locked in their day of eating. Give 1–2 sentences of honest feedback — mention what stood out (deficit, protein, total cals). Be encouraging but direct. No lists, no markdown, plain text only.', messages: [{ role: 'user', content: userMsg }] })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.content || !data.content[0]) { card.innerHTML = ''; return; }
+      const text = data.content[0].text.trim();
+      localStorage.setItem(cacheKey, JSON.stringify({ hash, text }));
+      const currentCard = document.getElementById('lockAnalysisCard');
+      if (currentCard) renderLockAnalysis(currentCard, text);
+    } catch(e) { card.innerHTML = ''; }
+  }
 
   // ---- RENDER MEAL SECTIONS ----
   function renderMealSections(log, locked, isFuture) {
@@ -931,7 +981,13 @@ The top-level "name" should be a natural overall label for the combined item.`;
             <div class="lock-summary-stats">${totalCal.toLocaleString()} cal · ${totalPro}g protein</div>
           </div>
           <button class="unlock-btn" onclick="unlockDay('${selectedDate}')">Unlock</button>
-        </div>`;
+        </div>
+        <div id="lockAnalysisCard"></div>`;
+      const cached = JSON.parse(localStorage.getItem('fuelLockAnalysis_' + selectedDate) || 'null');
+      if (cached && cached.hash === hashLog(log)) {
+        const card = document.getElementById('lockAnalysisCard');
+        if (card) renderLockAnalysis(card, cached.text);
+      }
     } else if (!isFuture && log.length > 0) {
       lockSection.innerHTML = `<button class="lock-btn" onclick="lockDay('${selectedDate}')"><i class="ti ti-lock" style="font-size:16px;vertical-align:-2px;margin-right:7px" aria-hidden="true"></i>Lock in Day</button>`;
     } else {
