@@ -1,5 +1,5 @@
   // ---- VERSION ----
-  const APP_VERSION = 'v3.0.3';
+  const APP_VERSION = 'v3.0.4';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1891,6 +1891,15 @@ The top-level "name" should be a natural overall label for the combined item.`;
     [0, 0.5, 1].forEach(t => { const y = pad.top + t * cH; html += `<line x1="${pad.left}" y1="${y.toFixed(1)}" x2="${W-pad.right}" y2="${y.toFixed(1)}" stroke="#202026" stroke-width="1"/>`; });
     html += `<line x1="${pad.left}" y1="${goalY.toFixed(1)}" x2="${W-pad.right}" y2="${goalY.toFixed(1)}" stroke="#34D399" stroke-width="1" stroke-dasharray="3,3" opacity="0.45"/>`;
     html += `<text x="${W-pad.right+2}" y="${goalY+3}" fill="#34D399" font-size="7" font-family="Inter,system-ui,sans-serif" opacity="0.7">${s.goalWeight}</text>`;
+    if (points.length > 1) {
+      const avgPoints = weights.map((w, i) => {
+        const slice = weights.slice(Math.max(0, i - 6), i + 1);
+        const avg = slice.reduce((a, w) => a + w.weight, 0) / slice.length;
+        return { x: xPos(i, weights.length), y: yPos(avg) };
+      });
+      const avgPathD = avgPoints.map((p, i) => `${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      html += `<path d="${avgPathD}" fill="none" stroke="#60A5FA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>`;
+    }
     if (points.length > 1) html += `<path d="${pathD}" fill="none" stroke="#FBBF24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
     points.forEach(p => { html += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="#FBBF24"/>`; });
     [maxW, (maxW+minW)/2, minW].forEach((v, i) => { const y = pad.top + (i * cH / 2); html += `<text x="${pad.left-4}" y="${(y+3).toFixed(1)}" text-anchor="end" fill="#6B7280" font-size="7" font-family="Inter,system-ui,sans-serif">${Math.round(v)}</text>`; });
