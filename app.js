@@ -1,5 +1,5 @@
   // ---- VERSION ----
-  const APP_VERSION = 'v3.0.5';
+  const APP_VERSION = 'v3.0.6';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1861,6 +1861,32 @@ The top-level "name" should be a natural overall label for the combined item.`;
     } catch(e) { card.innerHTML = ''; }
   }
 
+  function computeWeightForecast(weights, s) {
+    if (weights.length === 0) return null;
+    const rolling = rollingWeightAvg(weights);
+    const current = rolling ? rolling.avg : weights[weights.length - 1].weight;
+    if (current <= s.goalWeight) return { reached: true };
+    const lockedDeficits = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key.startsWith('fuelDayLocked_')) continue;
+      const date = key.replace('fuelDayLocked_', '');
+      const log = loadLog(date);
+      if (log.length === 0) continue;
+      const cal = log.reduce((a, e) => a + e.calories, 0);
+      lockedDeficits.push(s.maintenance - cal);
+    }
+    if (lockedDeficits.length < 3) return null;
+    const avgDeficit = lockedDeficits.reduce((a, d) => a + d, 0) / lockedDeficits.length;
+    if (avgDeficit <= 0) return { surplus: true, avgDeficit: Math.round(avgDeficit), count: lockedDeficits.length };
+    const remaining = current - s.goalWeight;
+    const daysToGoal = Math.round((remaining * 3500) / avgDeficit);
+    const goalDate = new Date();
+    goalDate.setDate(goalDate.getDate() + daysToGoal);
+    const goalDateStr = goalDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return { avgDeficit: Math.round(avgDeficit), daysToGoal, goalDateStr, remaining: remaining.toFixed(1), count: lockedDeficits.length, isEarly: lockedDeficits.length < 7 };
+  }
+
   function rollingWeightAvg(weights) {
     if (weights.length === 0) return null;
     const slice = weights.slice(-7);
@@ -1889,6 +1915,19 @@ The top-level "name" should be a natural overall label for the combined item.`;
       <div class="progress-bar" style="margin-bottom:16px"><div class="progress-fill" style="width:${pct}%;background:var(--accent3)"></div></div>
       ${rolling ? `<div class="weight-avg-row"><span class="weight-avg-label">${rollingLabel}</span><span class="weight-avg-val">${rolling.avg} lbs</span></div>` : ''}`;
     renderChart(weights, s);
+    const forecast = computeWeightForecast(weights, s);
+    const forecastEl = document.getElementById('weightForecastCard');
+    if (forecastEl) {
+      if (!forecast) {
+        forecastEl.innerHTML = '';
+      } else if (forecast.reached) {
+        forecastEl.innerHTML = `<div class="weight-forecast-card"><span class="wf-title">🎯 Goal reached!</span><div class="wf-sub">You've hit your goal weight. Keep it up.</div></div>`;
+      } else if (forecast.surplus) {
+        forecastEl.innerHTML = `<div class="weight-forecast-card"><span class="wf-title">Goal forecast</span><div class="wf-sub" style="color:var(--danger)">Currently in a ${Math.abs(forecast.avgDeficit).toLocaleString()} cal/day surplus — not trending toward goal yet.</div><div class="wf-meta">Based on ${forecast.count} locked days</div></div>`;
+      } else {
+        forecastEl.innerHTML = `<div class="weight-forecast-card"><span class="wf-title">Goal forecast</span><div class="wf-date">${forecast.goalDateStr}</div><div class="wf-sub">${forecast.remaining} lbs left · ~${forecast.daysToGoal} days · avg ${forecast.avgDeficit.toLocaleString()} cal deficit/day</div><div class="wf-meta">Based on ${forecast.count} locked days${forecast.isEarly ? ' · Early estimate' : ''}</div></div>`;
+      }
+    }
     const listEl = document.getElementById('weightList');
     if (weights.length === 0) { listEl.innerHTML = '<div class="empty-state">No weight entries yet.</div>'; return; }
     const reversed = [...weights].reverse();
