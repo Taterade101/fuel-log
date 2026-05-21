@@ -54,7 +54,7 @@
     backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
     border-top: 1px solid var(--border);
     display: flex;
-    padding: 0 0 max(4px, env(safe-area-inset-bottom));
+    padding: 0 6px max(10px, env(safe-area-inset-bottom));
     z-index: 50;
   }
   .tab-item {
