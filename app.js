@@ -1,5 +1,5 @@
   // ---- VERSION ----
-  const APP_VERSION = 'v3.0.1';
+  const APP_VERSION = 'v3.0.2';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1771,6 +1771,13 @@ The top-level "name" should be a natural overall label for the combined item.`;
   }
   function deleteWeight(i) { const w = loadWeights(); w.splice(i, 1); saveWeights(w); renderWeight(); }
 
+  function rollingWeightAvg(weights) {
+    if (weights.length === 0) return null;
+    const slice = weights.slice(-7);
+    const avg = slice.reduce((a, w) => a + w.weight, 0) / slice.length;
+    return { avg: Math.round(avg * 10) / 10, count: slice.length };
+  }
+
   function renderWeight() {
     const s = loadSettings();
     const weights = loadWeights();
@@ -1779,6 +1786,8 @@ The top-level "name" should be a natural overall label for the combined item.`;
     const remaining = latest - s.goalWeight;
     const range = s.startWeight - s.goalWeight;
     const pct = range > 0 ? Math.min(Math.max((lost / range) * 100, 0), 100) : 0;
+    const rolling = rollingWeightAvg(weights);
+    const rollingLabel = rolling ? (rolling.count >= 7 ? '7-entry avg' : `avg (${rolling.count} of 7)`) : '';
     document.getElementById('goalProgressCard').innerHTML = `
       <div class="goal-progress-card">
         <div><div class="gp-label">Current</div><div class="gp-val" style="color:var(--accent3)">${latest} lbs</div><div class="gp-sub">${lost > 0 ? lost.toFixed(1) + ' lbs lost' : 'Starting weight'}</div></div>
@@ -1787,7 +1796,8 @@ The top-level "name" should be a natural overall label for the combined item.`;
         <div class="gp-divider"></div>
         <div><div class="gp-label">Progress</div><div class="gp-val" style="color:var(--text)">${pct.toFixed(0)}%</div><div class="gp-sub">${pct >= 100 ? 'Goal reached!' : 'Keep going'}</div></div>
       </div>
-      <div class="progress-bar" style="margin-bottom:16px"><div class="progress-fill" style="width:${pct}%;background:var(--accent3)"></div></div>`;
+      <div class="progress-bar" style="margin-bottom:16px"><div class="progress-fill" style="width:${pct}%;background:var(--accent3)"></div></div>
+      ${rolling ? `<div class="weight-avg-row"><span class="weight-avg-label">${rollingLabel}</span><span class="weight-avg-val">${rolling.avg} lbs</span></div>` : ''}`;
     renderChart(weights, s);
     const listEl = document.getElementById('weightList');
     if (weights.length === 0) { listEl.innerHTML = '<div class="empty-state">No weight entries yet.</div>'; return; }
