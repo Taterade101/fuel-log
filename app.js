@@ -1,5 +1,5 @@
   // ---- VERSION ----
-  const APP_VERSION = 'v3.0.9';
+  const APP_VERSION = 'v3.1.0';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1019,7 +1019,27 @@ The top-level "name" should be a natural overall label for the combined item.`;
     }
 
     document.getElementById('resetBtn').style.display = (!locked && !isFuture && log.length > 0) ? 'block' : 'none';
+    const copySection = document.getElementById('copyDaySection');
+    if (copySection) {
+      const yLog = !locked && !isFuture && log.length === 0 ? loadLog(getYesterdayStr()) : [];
+      copySection.innerHTML = yLog.length > 0
+        ? `<button class="copy-day-btn" onclick="copyYesterdayLog()"><i class="ti ti-copy" style="font-size:15px;vertical-align:-2px;margin-right:6px"></i>Copy yesterday's log (${yLog.length} item${yLog.length !== 1 ? 's' : ''})</button>`
+        : '';
+    }
     updateStickyProgress();
+  }
+
+  function getYesterdayStr() {
+    const d = new Date(); d.setDate(d.getDate() - 1);
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  function copyYesterdayLog() {
+    const yLog = loadLog(getYesterdayStr());
+    if (!yLog.length) return;
+    currentDayLog = yLog.map(e => ({ ...e }));
+    saveLog(selectedDate, currentDayLog);
+    updateDayUI(); renderDayNav();
   }
 
   function deleteEntry(i) {
@@ -1344,7 +1364,7 @@ The top-level "name" should be a natural overall label for the combined item.`;
       });
     }
     const mealLabel = (MEALS.find(m => m.key === sheetMeal) || {}).label || 'meal';
-    const systemPrompt = `You are a nutrition logging assistant. The user is logging food for ${mealLabel}.${mealContext ? '\n\nYesterday\'s meals for context:\n' + mealContext : ''}\n\nBreak the food into its individual components (e.g. for a quesadilla: tortilla, cheese, chicken). Each ingredient or add-in should be its own item. This helps the user see and edit each part.\n\nRespond with JSON ONLY. No markdown, no backticks.\nFormat: {"items":[{"name":"...","calories":number,"protein_g":number,"note":"...","quantity":number,"quantity_unit":"...","cal_per_unit":number,"protein_per_unit":number}],"response":"1–2 sentence comment"}\nEach item must have all fields. quantity_unit describes the portion (e.g. \"serving\", \"oz\", \"cup\"). cal_per_unit and protein_per_unit equal calories/protein_g when quantity is 1.`;
+    const systemPrompt = `You are a nutrition logging assistant. The user is logging food for ${mealLabel}.${mealContext ? '\n\nYesterday\'s meals for context:\n' + mealContext : ''}\n\nBreak the food into its individual components (e.g. for a quesadilla: tortilla, cheese, chicken). Each ingredient or add-in should be its own item. This helps the user see and edit each part.\n\nRespond with JSON ONLY. No markdown, no backticks.\nFormat: {"items":[{"name":"...","calories":number,"protein_g":number,"note":"...","quantity":number,"quantity_unit":"...","cal_per_unit":number,"protein_per_unit":number}],"response":"1–2 sentence comment"}\nEach item must have all fields. quantity_unit describes the portion (e.g. \"serving\", \"oz\", \"cup\"). cal_per_unit and protein_per_unit equal calories/protein_g when quantity is 1.\n\nIf the input is not food or drink, return {"items":[],"response":"Please describe food or drink to log."}`;
 
     const userContent = sheetImages.length > 0
       ? [...sheetImages.map(img => ({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.data } })),

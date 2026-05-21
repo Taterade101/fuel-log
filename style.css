@@ -461,6 +461,13 @@
     width: 100%; margin-top: 6px; margin-bottom: 16px;
   }
   .reset-btn:hover { border-color: var(--danger); color: var(--danger); }
+  .copy-day-btn {
+    background: none; border: 1px solid rgba(52,211,153,0.25); color: var(--accent);
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+    padding: 9px 12px; border-radius: var(--r-sm); cursor: pointer; transition: all 0.2s;
+    width: 100%; margin-top: 6px; margin-bottom: 8px;
+  }
+  .copy-day-btn:hover { background: var(--accent-dim); }
 
   /* ── COMPAT (week / weight progress bars) ── */
   .progress-bar { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
