@@ -1,5 +1,5 @@
   // ---- VERSION ----
-  const APP_VERSION = 'v3.0.0';
+  const APP_VERSION = 'v3.0.1';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1712,15 +1712,23 @@ The top-level "name" should be a natural overall label for the combined item.`;
       const log = loadLog(date);
       const cal = log.reduce((a, e) => a + e.calories, 0);
       const hasData = log.length > 0;
-      if (hasData) { totalCal += cal; totalDays++; totalDeficit += s.maintenance - cal; }
+      const locked = isDayLocked(date);
+      if (hasData) { totalCal += cal; totalDays++; }
+      if (hasData && locked) { totalDeficit += s.maintenance - cal; }
       const pct = hasData ? Math.min((cal / s.calGoal) * 100, 100) : 0;
       const isToday = date === todayStr;
+      const isPast = date < todayStr;
+      const showWarn = isPast && hasData && !locked;
       let calClass = 'empty';
       if (hasData) calClass = cal > s.calGoal ? 'over' : 'good';
+      const dayDeficit = hasData ? s.maintenance - cal : null;
+      const defClass = dayDeficit !== null ? (dayDeficit >= 0 ? 'deficit-positive' : 'deficit-negative') : '';
+      const defText = dayDeficit !== null ? (dayDeficit >= 0 ? '+' + dayDeficit.toLocaleString() : dayDeficit.toLocaleString()) : '';
       return `<div class="week-day${isToday ? ' today' : ''}">
-        <div class="week-day-name">${dayNames[i]}</div>
+        <div class="week-day-name">${dayNames[i]}${showWarn ? '<span class="week-day-warn"></span>' : ''}</div>
         <div class="week-day-cal ${calClass}">${hasData ? cal : '&mdash;'}</div>
         <div class="week-day-bar"><div class="week-day-fill${cal > s.calGoal ? ' over' : ''}" style="width:${pct}%"></div></div>
+        ${hasData ? `<div class="week-day-deficit ${defClass}">${defText}</div>` : ''}
       </div>`;
     }).join('');
     document.getElementById('weekGrid').innerHTML = gridHTML;

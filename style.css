@@ -476,6 +476,8 @@
   .week-day-bar { height: 3px; background: var(--surface2); border-radius: 2px; margin-top: 6px; overflow: hidden; }
   .week-day-fill { height: 100%; background: var(--accent); border-radius: 2px; }
   .week-day-fill.over { background: var(--danger); }
+  .week-day-deficit { font-size: 9px; font-weight: 600; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .week-day-warn { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--accent3); vertical-align: middle; margin-left: 2px; margin-bottom: 1px; }
 
   /* ── WEIGHT TAB ── */
   .weight-input-row { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
