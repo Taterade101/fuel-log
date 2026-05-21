@@ -1,5 +1,5 @@
   // ---- VERSION ----
-  const APP_VERSION = 'v3.0.4';
+  const APP_VERSION = 'v3.0.5';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -1824,8 +1824,42 @@ The top-level "name" should be a natural overall label for the combined item.`;
     else weights.push({ date: todayStr, weight: val });
     weights.sort((a, b) => a.date.localeCompare(b.date));
     saveWeights(weights); input.value = ''; renderWeight();
+    analyzeWeightEntry(weights);
   }
   function deleteWeight(i) { const w = loadWeights(); w.splice(i, 1); saveWeights(w); renderWeight(); }
+
+  async function analyzeWeightEntry(weights) {
+    if (!getApiKey() || weights.length < 2) return;
+    const card = document.getElementById('weightAnalysisCard');
+    if (!card) return;
+    card.innerHTML = `<div class="weight-analysis loading"><span>Analyzing…</span></div>`;
+    const s = loadSettings();
+    const recent = weights.slice(-10);
+    const historyStr = recent.map(w => `${w.date}: ${w.weight} lbs`).join('\n');
+    const rolling = rollingWeightAvg(weights);
+    const d = new Date(); d.setDate(d.getDate() - 1);
+    const yStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    const yLog = loadLog(yStr);
+    const yTotal = yLog.reduce((a, e) => a + e.calories, 0);
+    const yPro = yLog.reduce((a, e) => a + e.protein_g, 0);
+    const userMsg = `Latest weight: ${weights[weights.length-1].weight} lbs\nGoals: start ${s.startWeight} lbs → goal ${s.goalWeight} lbs\n7-entry rolling avg: ${rolling ? rolling.avg + ' lbs' : 'n/a'}\n\nWeight history (oldest to newest):\n${historyStr}\n\n${yLog.length > 0 ? `Yesterday's food: ${yTotal} cal, ${yPro}g protein (${s.maintenance - yTotal >= 0 ? (s.maintenance - yTotal) + ' cal deficit' : Math.abs(s.maintenance - yTotal) + ' cal surplus'})` : 'No food logged yesterday.'}`;
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': getApiKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001', max_tokens: 200,
+          system: 'You are a brief fitness coach reviewing a weight log entry. Only respond if there is something genuinely useful to say — a notable jump or drop, a trend worth flagging, or context the food log can explain (e.g. high sodium = water retention). If the data is unremarkable, respond with exactly: null\n\nOtherwise give 1–2 sentences of honest, useful insight. No lists, no markdown, plain text only.',
+          messages: [{ role: 'user', content: userMsg }]
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.content || !data.content[0]) { card.innerHTML = ''; return; }
+      const text = data.content[0].text.trim();
+      if (text === 'null' || text === '') { card.innerHTML = ''; return; }
+      card.innerHTML = `<div class="weight-analysis"><div class="ai-label" style="color:var(--accent2);margin-bottom:4px">Claude</div><span>${text}</span></div>`;
+    } catch(e) { card.innerHTML = ''; }
+  }
 
   function rollingWeightAvg(weights) {
     if (weights.length === 0) return null;
