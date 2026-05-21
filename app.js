@@ -1,5 +1,5 @@
   // ---- VERSION ----
-  const APP_VERSION = 'v3.0.8';
+  const APP_VERSION = 'v3.0.9';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -813,7 +813,7 @@ The top-level "name" should be a natural overall label for the combined item.`;
     if (!el) return;
     const streak = computeStreak();
     if (streak === 0) { el.style.display = 'none'; return; }
-    el.textContent = streak === 1 ? '🔥 1 day locked' : `🔥 ${streak}-day streak`;
+    el.innerHTML = `<i class="ti ti-flame" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>${streak === 1 ? '1 day locked' : `${streak}-day streak`}`;
     el.style.display = 'block';
   }
 
