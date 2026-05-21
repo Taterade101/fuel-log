@@ -1,5 +1,5 @@
   // ---- VERSION ----
-  const APP_VERSION = 'v3.0.6';
+  const APP_VERSION = 'v3.0.8';
 
   // ---- MEALS CONFIG ----
   const MEALS = [
@@ -625,6 +625,7 @@ The top-level "name" should be a natural overall label for the combined item.`;
       s.startWeight + ' → ' + s.goalWeight + ' lbs  ·  ' + s.calGoal.toLocaleString() + ' cal  ·  ' + s.proGoal + 'g protein';
     document.title = name ? name + 'Fuel Log' : 'Fuel Log';
     updateDayUI();
+    updateStreakDisplay();
     updateStickyTop();
   }
   function populateSettingsForm(s) {
@@ -786,12 +787,35 @@ The top-level "name" should be a natural overall label for the combined item.`;
       'Lock in Day',
       () => {
         localStorage.setItem('fuelDayLocked_' + date, 'true');
-        renderDayNav(); updateDayUI();
+        renderDayNav(); updateDayUI(); updateStreakDisplay();
         analyzeDayOnLock(date);
       }
     );
   }
-  function unlockDay(date) { localStorage.removeItem('fuelDayLocked_' + date); renderDayNav(); updateDayUI(); }
+  function unlockDay(date) { localStorage.removeItem('fuelDayLocked_' + date); renderDayNav(); updateDayUI(); updateStreakDisplay(); }
+
+  function computeStreak() {
+    const todayStr = today();
+    let streak = 0;
+    const d = new Date();
+    if (!isDayLocked(todayStr)) d.setDate(d.getDate() - 1);
+    while (streak <= 365) {
+      const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      if (!isDayLocked(dateStr)) break;
+      streak++;
+      d.setDate(d.getDate() - 1);
+    }
+    return streak;
+  }
+
+  function updateStreakDisplay() {
+    const el = document.getElementById('streakLine');
+    if (!el) return;
+    const streak = computeStreak();
+    if (streak === 0) { el.style.display = 'none'; return; }
+    el.textContent = streak === 1 ? '🔥 1 day locked' : `🔥 ${streak}-day streak`;
+    el.style.display = 'block';
+  }
 
   function hashLog(log) {
     const str = JSON.stringify(log.map(e => ({ n: e.name, c: e.calories, p: e.protein_g, m: e.meal || 'snack' })));
